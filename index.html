@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>업무 보드</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sb:218px;--bg:#F1F0ED;--surface:#fff;--sb-bg:#F7F6F3;
+  --border:#E5E4E0;--border2:#CCCBC8;
+  --text:#1A1A1A;--text2:#636360;--text3:#A0A09C;
+  --accent:#1A1A1A;--today:#2563EB;
+  --high:#DC2626;--medium:#D97706;--low:#16A34A;
+  --r:10px;--r2:8px;
+  --sh:0 1px 3px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04);
+  --sh2:0 8px 28px rgba(0,0,0,.13),0 2px 6px rgba(0,0,0,.06);
+}
+body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased;font-size:14px}
+.app{display:flex;height:100vh}
+
+/* ── Sidebar ─────────────────────────────────────────────── */
+.sidebar{width:var(--sb);flex-shrink:0;background:var(--sb-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sb-top{padding:18px 12px 12px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--border)}
+.brand{font-size:14px;font-weight:700;letter-spacing:-.3px;padding:0 4px}
+.new-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px 0;background:var(--accent);color:#fff;border:none;border-radius:var(--r2);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:opacity .15s}
+.new-btn:hover{opacity:.82}
+.ev-new-btn{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:7px 0;background:none;border:1px solid var(--border);border-radius:var(--r2);font-family:inherit;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s}
+.ev-new-btn:hover{background:#FEF2F2;border-color:#FECACA;color:var(--high)}
+.sb-scroll{flex:1;overflow-y:auto;padding:6px 6px 16px}
+.sb-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;padding:10px 8px 4px}
+.sb-div{height:1px;background:var(--border);margin:6px 4px}
+
+/* Sidebar: "전체" + "날짜 미정" simple nav items */
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--r2);cursor:pointer;transition:background .12s}
+.nav-item:hover:not(.active){background:rgba(0,0,0,.05)}
+.nav-item.active{background:var(--accent);color:#fff}
+.nav-item.is-today:not(.active){background:#EFF6FF}
+.nav-item.drag-over{background:#DBEAFE !important;outline:2px dashed var(--today);outline-offset:-2px}
+.nav-dow{font-size:12px;font-weight:700;width:16px;flex-shrink:0;text-align:center;color:var(--text2)}
+.nav-item.active .nav-dow{color:rgba(255,255,255,.6)}
+.nav-item.is-today:not(.active) .nav-dow{color:var(--today)}
+.nav-info{flex:1;display:flex;align-items:center;gap:5px;min-width:0}
+.nav-date{font-size:12px;color:var(--text2)}
+.nav-item.active .nav-date{color:rgba(255,255,255,.6)}
+.nav-chip{font-size:9px;font-weight:700;letter-spacing:.2px;padding:1px 5px;border-radius:3px;background:var(--today);color:#fff;flex-shrink:0}
+.nav-item.active .nav-chip{background:rgba(255,255,255,.25)}
+.ev-dot{width:5px;height:5px;border-radius:50%;background:var(--high);flex-shrink:0}
+.nav-badge{flex-shrink:0;font-size:10px;font-weight:700;min-width:18px;height:18px;background:var(--border);color:var(--text2);border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.nav-item.active .nav-badge{background:rgba(255,255,255,.18);color:#fff}
+.nav-item.is-today:not(.active) .nav-badge{background:#DBEAFE;color:var(--today)}
+
+/* Sidebar: week group (collapsible) */
+.sb-wg{margin-bottom:1px}
+.sb-wg-head{display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;border-radius:7px;transition:background .12s;user-select:none}
+.sb-wg-head:hover{background:rgba(0,0,0,.05)}
+.sb-wg-arrow{color:var(--text3);transition:transform .18s;flex-shrink:0;display:flex;align-items:center}
+.sb-wg-head.open .sb-wg-arrow{transform:rotate(90deg)}
+.sb-wg-range{font-size:11px;font-weight:600;color:var(--text2);flex:1}
+.sb-wg-label{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:var(--today);color:#fff;flex-shrink:0}
+.sb-wg-label.next{background:var(--text2)}
+.sb-wg-cnt{font-size:10px;font-weight:700;min-width:16px;height:16px;background:var(--border);color:var(--text2);border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;flex-shrink:0}
+.sb-wg-body{overflow:hidden}
+.sb-wg-body.closed{display:none}
+/* indent date items inside week group */
+.sb-wg-body .nav-item{padding-left:22px}
+
+/* ── Panel ────────────────────────────────────────────────── */
+.panel{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.panel-head{background:var(--surface);border-bottom:1px solid var(--border);padding:20px 28px 16px;flex-shrink:0}
+.ph-row1{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.ph-nav{display:flex;align-items:center;gap:8px;flex:1}
+.ph-nav-btn{width:28px;height:28px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:16px;line-height:1;transition:all .12s}
+.ph-nav-btn:hover{background:var(--bg);border-color:var(--border2)}
+.ph-title{font-size:20px;font-weight:700;letter-spacing:-.4px;flex:1}
+.ph-sub{font-size:12px;color:var(--text3);margin-bottom:14px}
+.view-tabs{display:flex;gap:2px;background:var(--bg);padding:3px;border-radius:8px;flex-shrink:0}
+.view-tab{padding:5px 12px;border:none;background:transparent;border-radius:6px;font-family:inherit;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s}
+.view-tab.active{background:var(--surface);color:var(--text);box-shadow:var(--sh)}
+.ev-add-btn{display:flex;align-items:center;gap:4px;padding:5px 10px;background:none;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;flex-shrink:0;transition:all .15s}
+.ev-add-btn:hover{background:#FEF2F2;border-color:#FECACA;color:var(--high)}
+.stats-row{display:flex;align-items:center;gap:24px;margin-bottom:12px}
+.stat{display:flex;align-items:baseline;gap:5px}
+.stat-n{font-size:20px;font-weight:700;line-height:1}
+.stat-n.red{color:var(--high)}
+.stat-l{font-size:11px;color:var(--text3);font-weight:500}
+.stat-sep{width:1px;height:18px;background:var(--border);flex-shrink:0}
+.prog-wrap{display:flex;align-items:center;gap:10px}
+.prog-bar{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;max-width:200px}
+.prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease}
+.prog-pct{font-size:11px;font-weight:600;color:var(--text2)}
+.ev-banners{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.ev-banner{display:flex;align-items:center;gap:8px;padding:9px 12px;background:linear-gradient(135deg,#FFF5F5,#FEF2F2);border:1px solid #FECACA;border-radius:var(--r2)}
+.ev-banner-dot{width:7px;height:7px;border-radius:50%;background:var(--high);flex-shrink:0}
+.ev-banner-txt{flex:1;font-size:13px;font-weight:500;color:#991B1B}
+.ev-banner-del{background:none;border:none;cursor:pointer;color:#FCA5A5;font-size:16px;line-height:1;padding:0 2px;transition:color .12s}
+.ev-banner-del:hover{color:var(--high)}
+
+/* ── Panel body ───────────────────────────────────────────── */
+.panel-body{flex:1;overflow-y:auto;padding:20px 28px}
+.panel-body.week-mode{overflow:auto;padding:16px;display:flex;flex-direction:column}
+.panel-body.month-mode{overflow-y:auto;padding:16px}
+.date-group{margin-bottom:28px}
+.dg-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.dg-title{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.3px;white-space:nowrap}
+.dg-cnt{font-size:10px;font-weight:700;background:var(--border);color:var(--text2);padding:1px 7px;border-radius:8px}
+.dg-line{flex:1;height:1px;background:var(--border)}
+
+/* ── Task card ────────────────────────────────────────────── */
+.task-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;display:flex;align-items:stretch;overflow:hidden;transition:border-color .15s,box-shadow .15s,transform .12s,opacity .15s;cursor:pointer}
+.task-card:hover{border-color:var(--border2);box-shadow:var(--sh);transform:translateY(-1px)}
+.task-card.done{opacity:.45}
+.task-card.dragging{opacity:.25;transform:scale(.97);cursor:grabbing !important;box-shadow:none}
+/* fix 6: overdue highlight */
+.task-card.overdue:not(.done){background:#FFF8F8;border-color:#FECACA}
+.task-card.overdue:not(.done):hover{background:#FFF5F5;border-color:#FCA5A5;box-shadow:0 2px 8px rgba(220,38,38,.12)}
+.card-stripe{width:3px;flex-shrink:0}
+.task-card.high .card-stripe{background:var(--high)}
+.task-card.medium .card-stripe{background:var(--medium)}
+.task-card.low .card-stripe{background:var(--low)}
+.card-inner{flex:1;display:flex;align-items:flex-start;gap:11px;padding:13px 12px 13px 12px;min-width:0}
+.chk{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--border2);cursor:pointer;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.chk:hover{border-color:var(--accent)}
+.chk.on{background:var(--accent);border-color:var(--accent)}
+.chk.on::after{content:'';width:5px;height:8px;border:1.5px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px)}
+.card-body{flex:1;min-width:0}
+.card-title{font-size:14px;font-weight:500;color:var(--text);line-height:1.4;margin-bottom:7px}
+.task-card.done .card-title{text-decoration:line-through;color:var(--text3)}
+.card-meta{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.pri{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:2px 7px 2px 5px;border-radius:4px}
+.pri .dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.pri.high{color:var(--high);background:#FEF2F2}.pri.high .dot{background:var(--high)}
+.pri.medium{color:var(--medium);background:#FFFBEB}.pri.medium .dot{background:var(--medium)}
+.pri.low{color:var(--low);background:#F0FDF4}.pri.low .dot{background:var(--low)}
+.t-tag{font-size:11px;font-weight:500;padding:2px 8px;border-radius:4px;background:#EFEEEB;color:var(--text2)}
+.dl{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:2px 7px;border-radius:4px}
+.dl.over{color:var(--high);background:#FEF2F2}
+.dl.tod{color:var(--medium);background:#FFFBEB}
+.dl.soon{color:#7C3AED;background:#F5F3FF}
+.dl.norm{color:var(--text2);background:#F3F2EF}
+.asgn{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)}
+.av{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;background:linear-gradient(135deg,#667EEA,#764BA2)}
+.memo-ico{display:inline-flex;align-items:center;color:var(--text3)}
+.card-actions{display:flex;flex-direction:column;justify-content:center;gap:2px;padding:10px 9px 10px 4px;opacity:0;transition:opacity .15s;flex-shrink:0}
+.task-card:hover .card-actions{opacity:1}
+.ic{width:26px;height:26px;border:none;background:transparent;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all .12s}
+.ic:hover{background:var(--bg);color:var(--text)}
+.ic.del:hover{background:#FEF2F2;color:var(--high)}
+/* compact (week view) */
+.task-card.compact .card-inner{padding:8px 10px}
+.task-card.compact .card-title{font-size:12px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-card.compact .card-actions{padding:5px 7px 5px 3px}
+
+/* ── Week view ────────────────────────────────────────────── */
+.week-wrap{display:flex;gap:10px;flex:1;min-width:max-content}
+/* fix 2: wider columns */
+.week-col{width:260px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;transition:border-color .15s,background .15s}
+.week-col.drag-over{background:#EFF6FF !important;border-color:var(--today) !important}
+.week-col.today-col{border-color:#BFDBFE}
+.week-col-head{padding:10px 12px 8px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.week-col-head.today-head{background:#EFF6FF}
+.wch-info{display:flex;flex-direction:column;gap:1px}
+.wch-dow{font-size:11px;font-weight:700;color:var(--text2)}
+.wch-date{font-size:14px;font-weight:700;color:var(--text)}
+.today-col .wch-dow,.today-col .wch-date{color:var(--today)}
+.wch-add-ev{background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:0;line-height:1;transition:color .12s;flex-shrink:0}
+.wch-add-ev:hover{color:var(--high)}
+/* fix 7: event banners in week column */
+.wch-ev-banners{flex-shrink:0}
+.wch-ev-banner{display:flex;align-items:center;gap:5px;padding:5px 10px;background:#FEF2F2;border-bottom:1px solid #FECACA;font-size:10px;font-weight:600;color:#991B1B}
+.wch-ev-banner .ev-dot{width:5px;height:5px;flex-shrink:0}
+.wch-ev-banner-txt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wch-ev-del{background:none;border:none;cursor:pointer;color:#FCA5A5;font-size:12px;padding:0;line-height:1;margin-left:auto;flex-shrink:0;transition:color .12s}
+.wch-ev-del:hover{color:var(--high)}
+.week-col-body{flex:1;overflow-y:auto;padding:8px;min-height:120px}
+.week-col-empty{text-align:center;padding:24px 0 16px;font-size:11px;color:var(--text3)}
+
+/* ── Month view ───────────────────────────────────────────── */
+.month-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+.month-dow-cell{text-align:center;font-size:11px;font-weight:700;color:var(--text3);padding:4px 0}
+.month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+/* fix 3: taller cells */
+.month-cell{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px;min-height:128px;cursor:pointer;transition:border-color .15s,background .15s;display:flex;flex-direction:column}
+.month-cell:hover{border-color:var(--border2)}
+.month-cell.today-cell{background:#EFF6FF;border-color:#BFDBFE}
+.month-cell.selected-cell{border-color:var(--accent);border-width:2px}
+.month-cell.other-month{background:var(--bg);opacity:.55}
+.month-cell.drag-over{background:#EFF6FF !important;border-color:var(--today) !important}
+.mc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.mc-day{font-size:12px;font-weight:700;color:var(--text2)}
+.today-cell .mc-day{color:var(--today)}
+.mc-ev-dot{width:5px;height:5px;border-radius:50%;background:var(--high)}
+.mc-task{font-size:10px;padding:3px 6px;border-radius:3px;background:var(--bg);color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;display:flex;align-items:center;gap:3px;cursor:pointer;transition:background .12s}
+.mc-task:hover{background:var(--border)}
+.mc-dot{width:4px;height:4px;border-radius:50%;flex-shrink:0}
+.mc-more{font-size:10px;color:var(--text3);font-weight:600;padding:2px 4px;margin-top:auto}
+
+/* ── Empty ────────────────────────────────────────────────── */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:70px 24px;color:var(--text3)}
+.empty-ico{font-size:40px;margin-bottom:12px;opacity:.55}
+.empty-title{font-size:15px;font-weight:600;color:var(--text2);margin-bottom:6px}
+.empty-sub{font-size:13px;line-height:1.6}
+.empty-hint{margin-top:18px;font-size:12px;color:var(--text3);background:var(--surface);border:1px solid var(--border);padding:7px 13px;border-radius:var(--r2);display:inline-flex;gap:5px;align-items:center}
+kbd{font-family:inherit;font-size:11px;font-weight:600;background:var(--border);color:var(--text2);padding:1px 5px;border-radius:3px;border:1px solid var(--border2)}
+
+/* ── Modals ───────────────────────────────────────────────── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.28);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .18s}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:14px;width:100%;max-width:480px;box-shadow:var(--sh2);transform:translateY(10px) scale(.99);transition:transform .18s}
+.overlay.open .modal{transform:translateY(0) scale(1)}
+.mh{padding:20px 20px 0;display:flex;align-items:center;justify-content:space-between}
+.mt{font-size:15px;font-weight:700}
+.mc-btn{width:29px;height:29px;border:none;background:var(--bg);border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:background .12s}
+.mc-btn:hover{background:var(--border)}
+.mb{padding:16px 20px;display:flex;flex-direction:column;gap:13px}
+.mf{padding:0 20px 20px;display:flex;gap:8px;justify-content:flex-end}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
+.fi,.fs{font-family:inherit;font-size:13px;border:1.5px solid var(--border);border-radius:var(--r2);padding:9px 12px;outline:none;color:var(--text);background:var(--surface);width:100%;transition:border-color .15s}
+.fi:focus,.fs:focus{border-color:var(--accent)}
+.fs{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a0a09c' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tag-sel{display:flex;flex-wrap:wrap;gap:5px}
+.t-opt{padding:4px 10px;border-radius:5px;border:1.5px solid var(--border);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);background:var(--surface);transition:all .12s}
+.t-opt:hover{border-color:var(--accent);color:var(--text)}
+.t-opt.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.t-more{padding:4px 10px;border-radius:5px;border:1.5px dashed var(--border);font-family:inherit;font-size:12px;cursor:pointer;color:var(--text3);background:transparent;transition:all .12s}
+.t-more:hover{border-color:var(--accent);color:var(--accent)}
+.btn-g{padding:9px 16px;border:1.5px solid var(--border);border-radius:var(--r2);background:var(--surface);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);transition:background .12s}
+.btn-g:hover{background:var(--bg)}
+.btn-p{padding:9px 20px;border:none;border-radius:var(--r2);background:var(--accent);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;color:#fff;transition:opacity .12s}
+.btn-p:hover{opacity:.82}
+.btn-d{padding:9px 16px;border:none;border-radius:var(--r2);background:var(--high);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;color:#fff}
+.tmgr-list{display:flex;flex-wrap:wrap;gap:6px}
+.tmgr-item{display:flex;align-items:center;gap:4px;background:#EFEEEB;border-radius:5px;padding:3px 6px 3px 10px;font-size:12px;font-weight:500;color:var(--text2)}
+.tmgr-del{width:14px;height:14px;border:none;background:transparent;cursor:pointer;font-size:11px;color:var(--text3);display:flex;align-items:center;justify-content:center;border-radius:3px;padding:0;transition:color .12s}
+.tmgr-del:hover{color:var(--high)}
+.t-add-row{display:flex;gap:8px}.t-add-row .fi{flex:1}
+.btn-tag{padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r2);background:var(--surface);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;color:var(--text);white-space:nowrap;transition:all .12s}
+.btn-tag:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+/* Detail modal */
+.detail-modal{max-width:520px}
+.detail-title-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px}
+.detail-chk{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border2);cursor:pointer;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.detail-chk:hover{border-color:var(--accent)}
+.detail-chk.on{background:var(--accent);border-color:var(--accent)}
+.detail-chk.on::after{content:'';width:6px;height:9px;border:1.5px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px)}
+.detail-title{font-size:17px;font-weight:700;line-height:1.4;flex:1}
+.detail-title.done-title{text-decoration:line-through;color:var(--text3)}
+.detail-grid{display:grid;grid-template-columns:80px 1fr;gap:8px 12px;background:var(--bg);border-radius:var(--r2);padding:14px;margin-bottom:0}
+.dg-label{font-size:11px;font-weight:700;color:var(--text3);display:flex;align-items:center}
+.dg-val{font-size:13px;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+.detail-memo{margin-top:12px;background:var(--bg);border-radius:var(--r2);padding:12px}
+.detail-memo-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.detail-memo-text{font-size:13px;color:var(--text2);line-height:1.6}
+.detail-edit-btn{display:flex;align-items:center;gap:5px;padding:8px 14px;background:none;border:1.5px solid var(--border);border-radius:var(--r2);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);transition:all .12s}
+.detail-edit-btn:hover{background:var(--bg)}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sb-top">
+      <div class="brand">업무 보드</div>
+      <button class="new-btn" id="addBtn">
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v9M1 5.5h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        업무 추가
+      </button>
+      <button class="ev-new-btn" id="sbEvBtn">
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1L6.8 4.2l3.4.3-2.6 2.3.8 3.3L5.5 8.5 2.6 10l.8-3.3L.8 4.5l3.4-.3z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none"/></svg>
+        중요 일정 추가
+      </button>
+    </div>
+    <div class="sb-scroll" id="dateNav"></div>
+  </aside>
+  <div class="panel">
+    <div class="panel-head" id="panelHead"></div>
+    <div class="panel-body" id="panelBody"></div>
+  </div>
+</div>
+
+<!-- Task Modal -->
+<div class="overlay" id="taskOverlay">
+  <div class="modal">
+    <div class="mh"><div class="mt" id="modalTitle">새 업무</div><button class="mc-btn" id="taskClose">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">업무명</label><input class="fi" id="fTitle" placeholder="업무를 입력하세요" autocomplete="off"></div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">업무 날짜</label><input class="fi" type="date" id="fDate"></div>
+        <div class="fg"><label class="fl">마감일</label><input class="fi" type="date" id="fDeadline"></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">우선순위</label>
+          <select class="fs" id="fPriority"><option value="high">높음 (긴급)</option><option value="medium" selected>보통</option><option value="low">낮음</option></select>
+        </div>
+        <div class="fg"><label class="fl">담당자</label><input class="fi" id="fAssignee" placeholder="이름" autocomplete="off"></div>
+      </div>
+      <div class="fg"><label class="fl">협업파트</label><input class="fi" id="fCollab" placeholder="협업팀 / 파트 (선택)" autocomplete="off"></div>
+      <div class="fg"><label class="fl">프로젝트 태그</label><div class="tag-sel" id="tagSel"></div></div>
+      <div class="fg"><label class="fl">메모</label><input class="fi" id="fNote" placeholder="간단한 메모 (선택)" autocomplete="off"></div>
+    </div>
+    <div class="mf"><button class="btn-g" id="taskCancel">취소</button><button class="btn-p" id="taskSave">저장</button></div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal detail-modal">
+    <div class="mh" style="padding-bottom:16px"><div></div><button class="mc-btn" id="detailClose">✕</button></div>
+    <div class="mb" style="padding-top:0" id="detailBody"></div>
+    <div class="mf" id="detailFoot"></div>
+  </div>
+</div>
+
+<!-- Event Modal -->
+<div class="overlay" id="evOverlay">
+  <div class="modal" style="max-width:380px">
+    <div class="mh"><div class="mt">중요 일정 추가</div><button class="mc-btn" id="evClose">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">날짜</label><input class="fi" type="date" id="evDate"></div>
+      <div class="fg"><label class="fl">일정명</label><input class="fi" id="evTitle" placeholder="중요 일정 내용 입력" autocomplete="off"></div>
+    </div>
+    <div class="mf"><button class="btn-g" id="evCancel">취소</button><button class="btn-p" id="evSave">저장</button></div>
+  </div>
+</div>
+
+<!-- Tag Manager Modal -->
+<div class="overlay" id="tagOverlay">
+  <div class="modal" style="max-width:400px">
+    <div class="mh"><div class="mt">태그 관리</div><button class="mc-btn" id="tagClose">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">새 태그 추가</label>
+        <div class="t-add-row"><input class="fi" id="newTagInput" placeholder="태그 이름" maxlength="20" autocomplete="off"><button class="btn-tag" id="doAddTag">추가</button></div>
+      </div>
+      <div class="fg"><label class="fl">등록된 태그</label><div class="tmgr-list" id="tagMgrList"></div></div>
+    </div>
+    <div class="mf"><button class="btn-p" id="tagDone">완료</button></div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="overlay" id="confirmOverlay">
+  <div class="modal" style="max-width:320px">
+    <div class="mh"><div class="mt">업무 삭제</div><button class="mc-btn" id="confirmClose">✕</button></div>
+    <div class="mb"><p style="font-size:13px;color:var(--text2);line-height:1.65">이 업무를 삭제할까요?<br>삭제 후에는 복구할 수 없습니다.</p></div>
+    <div class="mf"><button class="btn-g" id="confirmCancel">취소</button><button class="btn-d" id="confirmOk">삭제</button></div>
+  </div>
+</div>
+
+<script>
+// ─── Constants ────────────────────────────────────────────────
+const DOW  = ['일','월','화','수','목','금','토'];
+const DOWF = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+const PLBL = {high:'높음',medium:'보통',low:'낮음'};
+
+// ─── State ────────────────────────────────────────────────────
+let tasks   = load('bd_tasks',  []);
+let tags    = load('bd_tags',   ['26SS','SNS','패키지','입점사']);
+let events  = load('bd_events', []);
+let sel   = todayStr();   // selected date / 'all' / 'nodate'
+let pview = 'list';       // 'list' | 'week' | 'month'
+// ── Navigation state: completely independent, ±1 unit only ──
+let wkStart = getMonday(todayStr());              // always a Monday string
+let moYear  = (()=>{ const d=new Date(); return {y:d.getFullYear(), m:d.getMonth()+1}; })();
+// fix 1: which week groups are open (4 groups, 0 = current week open by default)
+let weekOpen = [true, false, false, false];
+let editId=null, delId=null, selTags=[], dragId=null;
+
+function load(k,d){ try{return JSON.parse(localStorage.getItem(k))||d}catch{return d} }
+function persist(){
+  localStorage.setItem('bd_tasks',  JSON.stringify(tasks));
+  localStorage.setItem('bd_tags',   JSON.stringify(tags));
+  localStorage.setItem('bd_events', JSON.stringify(events));
+}
+
+// ─── Date utils ───────────────────────────────────────────────
+// fmt: 로컬 시간 기준 YYYY-MM-DD 포맷 (toISOString은 UTC 기준이라 KST 등에서 날짜 어긋남)
+function fmt(d){ const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+function todayStr(){ return fmt(new Date()); }
+function addDays(b,n){ const d=new Date(b+'T00:00:00'); d.setDate(d.getDate()+n); return fmt(d); }
+function parseD(s){ return new Date(s+'T00:00:00'); }
+function getMonday(d){
+  const dt=parseD(d), dow=dt.getDay(), diff=dow===0?-6:1-dow;
+  dt.setDate(dt.getDate()+diff); return fmt(dt); // 로컬 기준 → 항상 월요일
+}
+function getWeekDates(d){ const m=getMonday(d); return Array.from({length:7},(_,i)=>addDays(m,i)); }
+function getMonthGrid(y,mo){
+  const first=new Date(y,mo-1,1), fdow=first.getDay(), lead=fdow===0?6:fdow-1;
+  const start=new Date(first); start.setDate(start.getDate()-lead);
+  return Array.from({length:42},(_,i)=>{
+    const d=new Date(start); d.setDate(start.getDate()+i);
+    return {str:fmt(d), day:d.getDate(), inMonth:d.getMonth()===mo-1, dow:d.getDay()};
+  });
+}
+function fmtFull(s){
+  if(!s) return '날짜 미정';
+  const t=todayStr();
+  if(s===t) return '오늘';
+  if(s===addDays(t,1)) return '내일';
+  if(s===addDays(t,-1)) return '어제';
+  const d=parseD(s); return `${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`;
+}
+function fmtPanelTitle(s){
+  if(s==='all') return '전체 업무';
+  if(s==='nodate') return '날짜 미정';
+  const d=parseD(s), t=todayStr();
+  const pre=s===t?'오늘 · ':s===addDays(t,1)?'내일 · ':'';
+  return `${pre}${d.getMonth()+1}월 ${d.getDate()}일, ${DOWF[d.getDay()]}`;
+}
+function dlState(dl){
+  if(!dl) return null; const t=todayStr();
+  if(dl<t) return 'over'; if(dl===t) return 'tod';
+  if(dl<=addDays(t,3)) return 'soon'; return 'norm';
+}
+function dlLabel(dl){
+  if(!dl) return ''; const t=todayStr(), d=parseD(dl), m=d.getMonth()+1, day=d.getDate();
+  if(dl<t) return `${m}/${day} 초과`;
+  if(dl===t) return '오늘 마감';
+  if(dl===addDays(t,1)) return '내일 마감';
+  return `${m}/${day} 마감`;
+}
+function isOverdue(task){
+  return !task.done && task.deadline && task.deadline < todayStr();
+}
+
+// ─── Filtering ────────────────────────────────────────────────
+function tasksFor(k){ if(k==='all') return [...tasks]; if(k==='nodate') return tasks.filter(t=>!t.date); return tasks.filter(t=>t.date===k) }
+function pendingCnt(k){ return tasksFor(k).filter(t=>!t.done).length }
+function eventsFor(date){ return events.filter(e=>e.date===date) }
+function hasEv(date){ return eventsFor(date).length>0 }
+
+// ─── Navigation functions (new, rewritten from scratch) ───────
+// Each function changes state by exactly ±1 unit, nothing else.
+function navPrevWeek()  { wkStart = addDays(wkStart, -7); }
+function navNextWeek()  { wkStart = addDays(wkStart,  7); }
+function navPrevMonth() { moYear = moYear.m===1  ? {y:moYear.y-1, m:12} : {y:moYear.y, m:moYear.m-1}; }
+function navNextMonth() { moYear = moYear.m===12 ? {y:moYear.y+1, m:1}  : {y:moYear.y, m:moYear.m+1}; }
+// Sync nav state when user explicitly picks a date (sidebar, month cell)
+function syncNav(dateStr){
+  const d = parseD(dateStr);
+  wkStart = getMonday(dateStr);
+  moYear  = {y: d.getFullYear(), m: d.getMonth()+1};
+}
+
+// ─── Main render ──────────────────────────────────────────────
+function render(){ renderSidebar(); renderPanel(); setTimeout(setupDnD,0) }
+
+// ─── Sidebar ──────────────────────────────────────────────────
+// fix 1: collapsible week groups
+function renderSidebar(){
+  const t = todayStr();
+  const allPend    = tasks.filter(x=>!x.done).length;
+  const nodatePend = pendingCnt('nodate');
+  let html = '';
+
+  // "전체 업무"
+  html += `<div class="nav-item${sel==='all'?' active':''}" data-sel="all">
+    <span class="nav-dow" style="width:auto;font-size:11px">전체</span>
+    <div class="nav-info"></div>
+    ${allPend>0?`<span class="nav-badge">${allPend}</span>`:''}
+  </div><div class="sb-div"></div><div class="sb-lbl">날짜별</div>`;
+
+  // 4 week groups (7 days each, starting from today)
+  for(let wk=0; wk<4; wk++){
+    const startOffset = wk*7;
+    const startDate = addDays(t, startOffset);
+    const endDate   = addDays(t, startOffset+6);
+    const sd = parseD(startDate), ed = parseD(endDate);
+    const rangeLabel = `${sd.getMonth()+1}/${sd.getDate()} – ${ed.getMonth()+1}/${ed.getDate()}`;
+    const isOpen = weekOpen[wk];
+
+    // pending count for this group
+    let grpPend = 0;
+    for(let j=startOffset; j<startOffset+7; j++) grpPend += pendingCnt(addDays(t,j));
+
+    const chipHtml = wk===0
+      ? `<span class="sb-wg-label">이번 주</span>`
+      : wk===1
+        ? `<span class="sb-wg-label next">다음 주</span>`
+        : '';
+
+    html += `<div class="sb-wg">
+      <div class="sb-wg-head${isOpen?' open':''}" data-wk="${wk}">
+        <span class="sb-wg-arrow">
+          <svg width="7" height="10" viewBox="0 0 7 10" fill="none"><path d="M1.5 1.5L5.5 5L1.5 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="sb-wg-range">${rangeLabel}</span>
+        ${chipHtml}
+        ${grpPend>0?`<span class="sb-wg-cnt">${grpPend}</span>`:''}
+      </div>
+      <div class="sb-wg-body${isOpen?'':' closed'}">`;
+
+    for(let j=startOffset; j<startOffset+7; j++){
+      const d = addDays(t, j);
+      const dObj   = parseD(d);
+      const dow    = DOW[dObj.getDay()];
+      const isWkend = dObj.getDay()===0||dObj.getDay()===6;
+      const isToday = d===t;
+      const isTom   = d===addDays(t,1);
+      const pend    = pendingCnt(d);
+      const evDot   = hasEv(d);
+      const dateNum = `${dObj.getMonth()+1}/${dObj.getDate()}`;
+      const isActive = sel===d;
+
+      html += `<div class="nav-item${isActive?' active':''}${isToday?' is-today':''}" data-sel="${d}">
+        <span class="nav-dow" style="${isWkend&&!isActive?'color:var(--high)':''}">${dow}</span>
+        <div class="nav-info">
+          <span class="nav-date">${dateNum}</span>
+          ${isToday?`<span class="nav-chip">오늘</span>`:''}
+          ${isTom?`<span class="nav-chip" style="background:var(--text2)">내일</span>`:''}
+          ${evDot?`<span class="ev-dot"></span>`:''}
+        </div>
+        ${pend>0?`<span class="nav-badge">${pend}</span>`:''}
+      </div>`;
+    }
+    html += `</div></div>`; // close sb-wg-body, sb-wg
+  }
+
+  html += `<div class="sb-div"></div>`;
+  html += `<div class="nav-item${sel==='nodate'?' active':''}" data-sel="nodate">
+    <span class="nav-dow" style="color:var(--text3)">?</span>
+    <div class="nav-info"><span style="font-size:12px;color:${sel==='nodate'?'rgba(255,255,255,.7)':'var(--text3)'}">날짜 미정</span></div>
+    ${nodatePend>0?`<span class="nav-badge">${nodatePend}</span>`:''}
+  </div>`;
+
+  document.getElementById('dateNav').innerHTML = html;
+
+  // Week group toggle
+  document.querySelectorAll('.sb-wg-head[data-wk]').forEach(head=>{
+    head.addEventListener('click', e=>{
+      e.stopPropagation();
+      const wk = +head.dataset.wk;
+      weekOpen[wk] = !weekOpen[wk];
+      renderSidebar(); // only re-render sidebar
+    });
+  });
+
+  // Date item selection
+  document.querySelectorAll('.nav-item[data-sel]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      sel = el.dataset.sel;
+      if(sel!=='all'&&sel!=='nodate') syncNav(sel);
+      pview = 'list';
+      render();
+    });
+  });
+}
+
+// ─── Panel ────────────────────────────────────────────────────
+function renderPanel(){
+  const head = document.getElementById('panelHead');
+  const body = document.getElementById('panelBody');
+
+  const tabs = `<div class="view-tabs">
+    <button class="view-tab${pview==='list'?' active':''}" data-v="list">목록</button>
+    <button class="view-tab${pview==='week'?' active':''}" data-v="week">주간</button>
+    <button class="view-tab${pview==='month'?' active':''}" data-v="month">월간</button>
+  </div>`;
+
+  // ── List view ──────────────────────────────────────────────
+  if(pview==='list'){
+    const list  = tasksFor(sel);
+    const total = list.length, done=list.filter(t=>t.done).length, pend=total-done;
+    const high  = list.filter(t=>!t.done&&t.priority==='high').length;
+    const pct   = total ? Math.round(done/total*100) : 0;
+    const isDateSel = sel!=='all'&&sel!=='nodate';
+    const evBtn = isDateSel
+      ? `<button class="ev-add-btn" id="panelEvBtn">
+          <svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M5.5 1L6.8 4.2l3.4.3-2.6 2.3.8 3.3L5.5 8.5 2.6 10l.8-3.3L.8 4.5l3.4-.3z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+          일정 추가
+        </button>` : '';
+
+    head.innerHTML = `
+      <div class="ph-row1">
+        <div class="ph-title">${fmtPanelTitle(sel)}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">${evBtn}${tabs}</div>
+      </div>
+      ${isDateSel?`<div class="ph-sub">${parseD(sel).getFullYear()}년 ${parseD(sel).getMonth()+1}월 ${parseD(sel).getDate()}일</div>`:'<div style="height:4px"></div>'}
+      <div class="stats-row">
+        <div class="stat"><span class="stat-n">${pend}</span><span class="stat-l">진행 중</span></div>
+        <div class="stat-sep"></div>
+        <div class="stat"><span class="stat-n">${done}</span><span class="stat-l">완료</span></div>
+        ${high>0?`<div class="stat-sep"></div><div class="stat"><span class="stat-n red">${high}</span><span class="stat-l">긴급</span></div>`:''}
+      </div>
+      ${total>0?`<div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><span class="prog-pct">${pct}%</span></div>`:''}`;
+
+    document.getElementById('panelEvBtn')?.addEventListener('click',()=>openEvModal(sel));
+
+    body.className = 'panel-body';
+    let bodyHTML = '';
+
+    // Event banners
+    if(isDateSel){
+      const evs = eventsFor(sel);
+      if(evs.length) bodyHTML += `<div class="ev-banners">${evs.map(e=>`
+        <div class="ev-banner">
+          <span class="ev-banner-dot"></span>
+          <span class="ev-banner-txt">${esc(e.title)}</span>
+          <button class="ev-banner-del" data-evid="${e.id}">×</button>
+        </div>`).join('')}</div>`;
+    }
+
+    if(sel==='all'){
+      const grps={};
+      list.forEach(t=>{ const k=t.date||'__nd__'; (grps[k]=grps[k]||[]).push(t); });
+      const keys=Object.keys(grps).sort((a,b)=>{ if(a==='__nd__') return 1; if(b==='__nd__') return -1; return a.localeCompare(b); });
+      bodyHTML += keys.map(k=>{
+        const grp=sorted(grps[k]), p=grp.filter(t=>!t.done).length;
+        return `<div class="date-group">
+          <div class="dg-head"><span class="dg-title">${fmtFull(k==='__nd__'?'':k)}</span>${p>0?`<span class="dg-cnt">${p}</span>`:''}<div class="dg-line"></div></div>
+          ${grp.map(t=>cardHTML(t)).join('')}
+        </div>`;
+      }).join('');
+    } else {
+      if(!list.length){
+        bodyHTML += `<div class="empty"><div class="empty-ico">📋</div><div class="empty-title">업무가 없습니다</div><div class="empty-sub">이 날짜에 등록된 업무가 없습니다.</div><div class="empty-hint"><kbd>N</kbd> 키로 빠르게 추가</div></div>`;
+      } else {
+        bodyHTML += sorted(list).map(t=>cardHTML(t)).join('');
+      }
+    }
+    body.innerHTML = bodyHTML;
+
+    body.querySelectorAll('.ev-banner-del').forEach(btn=>{
+      btn.addEventListener('click', e=>{ e.stopPropagation(); deleteEvent(btn.dataset.evid); });
+    });
+
+  // ── Week view ──────────────────────────────────────────────
+  } else if(pview==='week'){
+    // week view: read wkStart directly (always a clean Monday)
+    const weekDates = getWeekDates(wkStart);
+    const mon = parseD(weekDates[0]), sun = parseD(weekDates[6]);
+    const weekLabel = `${mon.getMonth()+1}/${mon.getDate()} – ${sun.getMonth()+1}/${sun.getDate()}`;
+
+    head.innerHTML = `
+      <div class="ph-row1">
+        <div style="display:flex;align-items:center;gap:4px;flex:1">
+          <button class="ph-nav-btn" data-nav="prev">‹</button>
+          <span style="font-size:18px;font-weight:700;letter-spacing:-.4px">${mon.getFullYear()}년 ${mon.getMonth()+1}월</span>
+          <button class="ph-nav-btn" data-nav="next">›</button>
+          <span style="font-size:12px;color:var(--text2);font-weight:500;margin-left:4px">${weekLabel}</span>
+        </div>
+        ${tabs}
+      </div>`;
+
+    const t = todayStr();
+    body.className = 'panel-body week-mode';
+    body.innerHTML = `<div class="week-wrap">${weekDates.map(d=>{
+      const dObj   = parseD(d);
+      const isToday = d===t;
+      const isWkend = dObj.getDay()===0||dObj.getDay()===6;
+      const dayTasks = sorted(tasksFor(d));
+      const pend = dayTasks.filter(x=>!x.done).length;
+      const evs  = eventsFor(d);
+
+      // fix 7: event banners in week column header
+      const evBannersHtml = evs.map(ev=>`
+        <div class="wch-ev-banner">
+          <span class="ev-dot"></span>
+          <span class="wch-ev-banner-txt">${esc(ev.title)}</span>
+          <button class="wch-ev-del" data-evid="${ev.id}">×</button>
+        </div>`).join('');
+
+      return `<div class="week-col${isToday?' today-col':''}" data-drop-date="${d}">
+        <div class="week-col-head${isToday?' today-head':''}">
+          <div class="wch-info">
+            <span class="wch-dow" style="${isWkend&&!isToday?'color:var(--high)':''}">${DOW[dObj.getDay()]}</span>
+            <span class="wch-date">${dObj.getMonth()+1}/${dObj.getDate()}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            ${pend>0?`<span style="font-size:10px;font-weight:700;color:var(--text3)">${pend}개</span>`:''}
+            <button class="wch-add-ev" data-ev-date="${d}" title="일정 추가">★</button>
+          </div>
+        </div>
+        ${evBannersHtml?`<div class="wch-ev-banners">${evBannersHtml}</div>`:''}
+        <div class="week-col-body" data-drop-date="${d}">
+          ${dayTasks.length ? dayTasks.map(t=>cardHTML(t,true)).join('') : `<div class="week-col-empty">업무 없음</div>`}
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+
+    body.querySelectorAll('.wch-add-ev').forEach(btn=>{
+      btn.addEventListener('click', e=>{ e.stopPropagation(); openEvModal(btn.dataset.evDate); });
+    });
+    body.querySelectorAll('.wch-ev-del').forEach(btn=>{
+      btn.addEventListener('click', e=>{ e.stopPropagation(); deleteEvent(btn.dataset.evid); });
+    });
+
+  // ── Month view ─────────────────────────────────────────────
+  } else if(pview==='month'){
+    // month view: read moYear directly (y/m integers, never ambiguous)
+    const y = moYear.y, mo = moYear.m;
+    const cells = getMonthGrid(y, mo);
+    const t = todayStr();
+
+    head.innerHTML = `
+      <div class="ph-row1">
+        <div style="display:flex;align-items:center;gap:4px;flex:1">
+          <button class="ph-nav-btn" data-nav="prev">‹</button>
+          <span style="font-size:18px;font-weight:700;letter-spacing:-.4px">${y}년 ${mo}월</span>
+          <button class="ph-nav-btn" data-nav="next">›</button>
+        </div>
+        ${tabs}
+      </div>`;
+
+    body.className = 'panel-body month-mode';
+    body.innerHTML = `
+      <div class="month-dow-row">${['월','화','수','목','금','토','일'].map((d,i)=>
+        `<div class="month-dow-cell" style="${i>=5?'color:var(--high)':''}">${d}</div>`).join('')}</div>
+      <div class="month-grid">${cells.map(c=>{
+        const isToday    = c.str===t;
+        const isSelected = c.str===sel;
+        const evs        = eventsFor(c.str);
+        const allDay     = tasksFor(c.str).filter(x=>!x.done);
+        const dayTasks   = allDay.slice(0,3);
+        const more       = allDay.length-3;
+        const isWkend    = c.dow===0||c.dow===6;
+
+        return `<div class="month-cell${isToday?' today-cell':''}${isSelected&&!isToday?' selected-cell':''}${!c.inMonth?' other-month':''}" data-drop-date="${c.str}" data-sel-date="${c.str}">
+          <div class="mc-head">
+            <span class="mc-day" style="${isWkend&&!isToday?'color:var(--high)':''}">${c.day}</span>
+            ${evs.length?`<span class="mc-ev-dot"></span>`:''}
+          </div>
+          ${dayTasks.map(task=>`
+            <div class="mc-task" data-action="detail" data-id="${task.id}">
+              <span class="mc-dot" style="background:${task.priority==='high'?'var(--high)':task.priority==='medium'?'var(--medium)':'var(--low)'}"></span>
+              ${esc(task.title)}
+            </div>`).join('')}
+          ${more>0?`<div class="mc-more">+${more}개 더</div>`:''}
+        </div>`;
+      }).join('')}</div>`;
+
+    // month cell click — navigate to that date's list view
+    body.querySelectorAll('.month-cell[data-sel-date]').forEach(el=>{
+      el.addEventListener('click', e=>{
+        if(e.target.closest('[data-action="detail"]')) return; // task pill → global delegation handles
+        sel = el.dataset.selDate;
+        syncNav(sel);
+        pview = 'list';
+        render();
+      });
+    });
+  }
+
+}
+
+// ─── Card HTML ────────────────────────────────────────────────
+function cardHTML(t, compact=false){
+  const ds  = dlState(t.deadline);
+  const dl  = dlLabel(t.deadline);
+  const ov  = isOverdue(t); // fix 6
+  const tagsH = (t.tags||[]).map(g=>`<span class="t-tag">${esc(g)}</span>`).join('');
+  const asgnH = t.assignee
+    ? `<span class="asgn"><span class="av">${esc(t.assignee.slice(0,1).toUpperCase())}</span>${esc(t.assignee)}</span>` : '';
+  const dlH = dl
+    ? `<span class="dl ${ds}"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x=".75" y="1.75" width="8.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M3 .75v2M7 .75v2M.75 4.75h8.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>${dl}</span>` : '';
+  const memoH = t.note
+    ? `<span class="memo-ico" title="${esc(t.note)}"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.5" y="1.5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M3.5 4h5M3.5 6h5M3.5 8h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>` : '';
+
+  return `<div class="task-card ${t.priority}${t.done?' done':''}${compact?' compact':''}${ov?' overdue':''}" data-id="${t.id}" draggable="true">
+    <div class="card-stripe"></div>
+    <div class="card-inner">
+      <div class="chk${t.done?' on':''}" data-action="toggle" data-id="${t.id}"></div>
+      <div class="card-body" data-action="detail" data-id="${t.id}">
+        <div class="card-title">${esc(t.title)}</div>
+        <div class="card-meta"><span class="pri ${t.priority}"><span class="dot"></span>${PLBL[t.priority]}</span>${tagsH}${dlH}${asgnH}${memoH}</div>
+      </div>
+    </div>
+    <div class="card-actions">
+      <button class="ic" data-action="edit" data-id="${t.id}" title="수정"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8.5 2 11 4.5 4.5 11H2V8.5L8.5 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></button>
+      <button class="ic del" data-action="del" data-id="${t.id}" title="삭제"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3.5h9M5 3.5V2.5h3V3.5M4 3.5l.5 7h4l.5-7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+  </div>`;
+}
+
+function sorted(list){
+  const po={high:0,medium:1,low:2};
+  return [...list].sort((a,b)=>{ if(a.done!==b.done) return a.done?1:-1; return po[a.priority]-po[b.priority]; });
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+
+// ─── Global event delegation ──────────────────────────────────
+document.addEventListener('click', e=>{
+  // 1) Navigation arrows — single global handler, zero per-render listeners
+  const navBtn = e.target.closest('.ph-nav-btn[data-nav]');
+  if(navBtn){
+    const next = navBtn.dataset.nav === 'next';
+    if     (pview==='week'  && next)  navNextWeek();
+    else if(pview==='week'  && !next) navPrevWeek();
+    else if(pview==='month' && next)  navNextMonth();
+    else if(pview==='month' && !next) navPrevMonth();
+    render(); return;
+  }
+  // 2) View tabs — single global handler
+  const viewTab = e.target.closest('.view-tab[data-v]');
+  if(viewTab){
+    if(sel!=='all'&&sel!=='nodate') syncNav(sel); // sync to current selection
+    pview = viewTab.dataset.v;
+    render(); return;
+  }
+  // 3) Task / detail actions
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const {action, id} = btn.dataset;
+  if(action==='detail'){ openDetailModal(id); return; }
+  if(action==='toggle'){ e.stopPropagation(); toggle(id); return; }
+  if(action==='edit')  { e.stopPropagation(); closeOvr('detailOverlay'); openTaskModal(id); return; }
+  if(action==='del')   { e.stopPropagation(); closeOvr('detailOverlay'); openConfirm(id); return; }
+});
+
+// ─── Toggle done ──────────────────────────────────────────────
+function toggle(id){
+  const t = tasks.find(x=>x.id===id);
+  if(t){ t.done=!t.done; persist(); render(); }
+}
+
+// ─── Drag & Drop ──────────────────────────────────────────────
+function setupDnD(){
+  document.querySelectorAll('.task-card[data-id]').forEach(card=>{
+    card.addEventListener('dragstart', e=>{
+      dragId = card.dataset.id;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', card.dataset.id);
+      setTimeout(()=>card.classList.add('dragging'),0);
+    });
+    card.addEventListener('dragend',()=>{
+      dragId = null;
+      card.classList.remove('dragging');
+      document.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+    });
+  });
+
+  const targets = [
+    ...document.querySelectorAll('.nav-item[data-sel]:not([data-sel="all"]):not([data-sel="nodate"])'),
+    ...document.querySelectorAll('.week-col-body[data-drop-date]'),
+    ...document.querySelectorAll('.month-cell[data-drop-date]'),
+  ];
+
+  targets.forEach(el=>{
+    const dateKey = el.dataset.sel || el.dataset.dropDate;
+    if(!dateKey) return;
+    el.addEventListener('dragover', e=>{
+      if(!dragId) return;
+      e.preventDefault(); e.dataTransfer.dropEffect='move';
+      el.classList.add('drag-over');
+    });
+    el.addEventListener('dragleave', e=>{
+      if(!el.contains(e.relatedTarget)) el.classList.remove('drag-over');
+    });
+    el.addEventListener('drop', e=>{
+      e.preventDefault(); el.classList.remove('drag-over');
+      const id = e.dataTransfer.getData('text/plain');
+      const task = tasks.find(x=>x.id===id);
+      if(task){ task.date=dateKey; persist(); render(); }
+    });
+  });
+}
+
+// ─── Task Modal ───────────────────────────────────────────────
+function openTaskModal(id){
+  editId = id||null; selTags = [];
+  const t = id ? tasks.find(x=>x.id===id) : null;
+  document.getElementById('modalTitle').textContent = t?'업무 수정':'새 업무';
+  document.getElementById('fTitle').value    = t?t.title:'';
+  document.getElementById('fDate').value     = t?(t.date||''):(sel!=='all'&&sel!=='nodate'?sel:todayStr());
+  document.getElementById('fDeadline').value = t?(t.deadline||''):'';
+  document.getElementById('fPriority').value = t?t.priority:'medium';
+  document.getElementById('fAssignee').value = t?(t.assignee||''):'';
+  document.getElementById('fCollab').value   = t?(t.collab||''):'';
+  document.getElementById('fNote').value     = t?(t.note||''):'';
+  selTags = t?[...(t.tags||[])]:[];
+  renderTagSel();
+  openOvr('taskOverlay');
+  setTimeout(()=>document.getElementById('fTitle').focus(),160);
+}
+
+function saveTask(){
+  const title = document.getElementById('fTitle').value.trim();
+  if(!title){
+    const el=document.getElementById('fTitle');
+    el.style.borderColor='var(--high)'; el.focus();
+    setTimeout(()=>el.style.borderColor='',700); return;
+  }
+  const data = {
+    title,
+    date:     document.getElementById('fDate').value,
+    deadline: document.getElementById('fDeadline').value,
+    priority: document.getElementById('fPriority').value,
+    assignee: document.getElementById('fAssignee').value.trim(),
+    collab:   document.getElementById('fCollab').value.trim(),
+    note:     document.getElementById('fNote').value.trim(),
+    tags:     [...selTags],
+  };
+  if(editId){ const i=tasks.findIndex(x=>x.id===editId); if(i!==-1) tasks[i]={...tasks[i],...data}; }
+  else tasks.unshift({id:uid(), done:false, createdAt:Date.now(), ...data});
+  persist(); render(); closeOvr('taskOverlay');
+}
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7) }
+
+// ─── Detail Modal ─────────────────────────────────────────────
+function openDetailModal(id){
+  const t = tasks.find(x=>x.id===id);
+  if(!t) return;
+  const ds = dlState(t.deadline), dl = dlLabel(t.deadline);
+  const tagsH = (t.tags||[]).map(g=>`<span class="t-tag">${esc(g)}</span>`).join('');
+  const rows = [
+    ['우선순위', `<span class="pri ${t.priority}" style="display:inline-flex"><span class="dot"></span>${PLBL[t.priority]}</span>`],
+    t.date     ? ['업무 날짜', fmtFull(t.date)] : null,
+    t.deadline ? ['마감일',    `<span class="dl ${ds}">${dl}</span>`] : null,
+    t.assignee ? ['담당자',    `<span class="asgn"><span class="av">${esc(t.assignee.slice(0,1).toUpperCase())}</span>${esc(t.assignee)}</span>`] : null,
+    t.collab   ? ['협업파트',  esc(t.collab)] : null,
+    (t.tags||[]).length ? ['태그', tagsH] : null,
+  ].filter(Boolean);
+
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-title-row">
+      <div class="detail-chk${t.done?' on':''}" data-action="toggle" data-id="${t.id}"></div>
+      <div class="detail-title${t.done?' done-title':''}">${esc(t.title)}</div>
+    </div>
+    <div class="detail-grid">${rows.map(([l,v])=>`<div class="dg-label">${l}</div><div class="dg-val">${v}</div>`).join('')}</div>
+    ${t.note?`<div class="detail-memo"><div class="detail-memo-label">메모</div><div class="detail-memo-text">${esc(t.note)}</div></div>`:''}`;
+
+  document.getElementById('detailFoot').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+      <button class="btn-d" style="font-size:12px;padding:7px 13px" data-action="del" data-id="${t.id}">삭제</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-g detail-edit-btn" data-action="edit" data-id="${t.id}">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8.5 2 11 4.5 4.5 11H2V8.5L8.5 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg> 수정
+        </button>
+        <button class="btn-p" id="detailDoneBtn">${t.done?'미완료로 변경':'완료로 표시'}</button>
+      </div>
+    </div>`;
+
+  document.getElementById('detailDoneBtn').addEventListener('click',()=>{
+    toggle(t.id); closeOvr('detailOverlay');
+  });
+  openOvr('detailOverlay');
+}
+
+// ─── Event Modal ──────────────────────────────────────────────
+function openEvModal(date){
+  document.getElementById('evDate').value  = date||(sel!=='all'&&sel!=='nodate'?sel:todayStr());
+  document.getElementById('evTitle').value = '';
+  openOvr('evOverlay');
+  setTimeout(()=>document.getElementById('evTitle').focus(),160);
+}
+function saveEvent(){
+  const date  = document.getElementById('evDate').value;
+  const title = document.getElementById('evTitle').value.trim();
+  if(!date||!title){ document.getElementById('evTitle').focus(); return; }
+  events.push({id:uid(), date, title});
+  persist(); render(); closeOvr('evOverlay');
+}
+function deleteEvent(id){
+  events = events.filter(e=>e.id!==id);
+  persist(); render();
+}
+
+// ─── Tag selector ─────────────────────────────────────────────
+function renderTagSel(){
+  const el = document.getElementById('tagSel');
+  el.innerHTML = tags.map(t=>`<button class="t-opt${selTags.includes(t)?' on':''}" data-tag="${esc(t)}">${esc(t)}</button>`).join('')
+    + `<button class="t-more" id="openTagMgr">+ 태그 추가</button>`;
+  el.querySelectorAll('.t-opt').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const tag = btn.dataset.tag;
+      if(selTags.includes(tag)) selTags=selTags.filter(x=>x!==tag); else selTags.push(tag);
+      renderTagSel();
+    });
+  });
+  document.getElementById('openTagMgr')?.addEventListener('click',()=>{
+    renderTagMgrList(); document.getElementById('newTagInput').value=''; openOvr('tagOverlay');
+    setTimeout(()=>document.getElementById('newTagInput').focus(),160);
+  });
+}
+
+// ─── Tag Manager ──────────────────────────────────────────────
+function renderTagMgrList(){
+  const el = document.getElementById('tagMgrList');
+  if(!tags.length){ el.innerHTML='<span style="font-size:12px;color:var(--text3)">등록된 태그 없음</span>'; return; }
+  el.innerHTML = tags.map((t,i)=>`<div class="tmgr-item">${esc(t)}<button class="tmgr-del" data-idx="${i}">✕</button></div>`).join('');
+  el.querySelectorAll('.tmgr-del').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const removed=tags[+btn.dataset.idx]; tags.splice(+btn.dataset.idx,1);
+      selTags=selTags.filter(x=>x!==removed); persist(); renderTagMgrList();
+    });
+  });
+}
+function addTag(){
+  const val = document.getElementById('newTagInput').value.trim();
+  if(!val||tags.includes(val)) return;
+  tags.push(val); persist(); document.getElementById('newTagInput').value=''; renderTagMgrList();
+}
+
+// ─── Delete confirm ───────────────────────────────────────────
+function openConfirm(id){ delId=id; openOvr('confirmOverlay'); }
+function doDelete(){
+  if(delId){ tasks=tasks.filter(x=>x.id!==delId); persist(); render(); }
+  closeOvr('confirmOverlay'); closeOvr('detailOverlay');
+}
+
+// ─── Overlay helpers ──────────────────────────────────────────
+function openOvr(id) { document.getElementById(id).classList.add('open') }
+function closeOvr(id){ document.getElementById(id).classList.remove('open') }
+
+['taskOverlay','detailOverlay','evOverlay','tagOverlay','confirmOverlay'].forEach(id=>{
+  document.getElementById(id).addEventListener('click', function(e){
+    if(e.target===this){ if(id==='tagOverlay') renderTagSel(); closeOvr(id); }
+  });
+});
+
+// ─── Button wiring ────────────────────────────────────────────
+document.getElementById('addBtn').addEventListener('click',   ()=>openTaskModal());
+document.getElementById('sbEvBtn').addEventListener('click',  ()=>openEvModal(sel!=='all'&&sel!=='nodate'?sel:todayStr()));
+document.getElementById('taskClose').addEventListener('click', ()=>closeOvr('taskOverlay'));
+document.getElementById('taskCancel').addEventListener('click',()=>closeOvr('taskOverlay'));
+document.getElementById('taskSave').addEventListener('click',  saveTask);
+document.getElementById('detailClose').addEventListener('click',()=>closeOvr('detailOverlay'));
+document.getElementById('evClose').addEventListener('click',  ()=>closeOvr('evOverlay'));
+document.getElementById('evCancel').addEventListener('click', ()=>closeOvr('evOverlay'));
+document.getElementById('evSave').addEventListener('click',   saveEvent);
+document.getElementById('evTitle').addEventListener('keydown', e=>{ if(e.key==='Enter') saveEvent(); });
+document.getElementById('tagClose').addEventListener('click', ()=>{ renderTagSel(); closeOvr('tagOverlay'); });
+document.getElementById('tagDone').addEventListener('click',  ()=>{ renderTagSel(); closeOvr('tagOverlay'); });
+document.getElementById('doAddTag').addEventListener('click', addTag);
+document.getElementById('newTagInput').addEventListener('keydown', e=>{ if(e.key==='Enter') addTag(); });
+document.getElementById('confirmClose').addEventListener('click', ()=>closeOvr('confirmOverlay'));
+document.getElementById('confirmCancel').addEventListener('click',()=>closeOvr('confirmOverlay'));
+document.getElementById('confirmOk').addEventListener('click', doDelete);
+
+// ─── Keyboard ─────────────────────────────────────────────────
+document.addEventListener('keydown', e=>{
+  const inInput = ['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName);
+  if(e.key==='Escape'){
+    const order = ['confirmOverlay','tagOverlay','detailOverlay','evOverlay','taskOverlay'];
+    for(const id of order){ if(document.getElementById(id).classList.contains('open')){ if(id==='tagOverlay') renderTagSel(); closeOvr(id); return; } }
+  }
+  if(e.key==='n'&&!inInput&&!document.querySelector('.overlay.open')) openTaskModal();
+});
+
+// ─── Init ─────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
