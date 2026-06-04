@@ -220,6 +220,7 @@ kbd{font-family:inherit;font-size:11px;font-weight:600;background:var(--border);
 .fl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
 .fi,.fs{font-family:inherit;font-size:13px;border:1.5px solid var(--border);border-radius:var(--r2);padding:9px 12px;outline:none;color:var(--text);background:var(--surface);width:100%;transition:border-color .15s}
 .fi:focus,.fs:focus{border-color:var(--accent)}
+textarea.fi{resize:vertical;min-height:76px;line-height:1.55;font-family:inherit}
 .fs{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a0a09c' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
 .fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .tag-sel{display:flex;flex-wrap:wrap;gap:5px}
@@ -254,7 +255,7 @@ kbd{font-family:inherit;font-size:11px;font-weight:600;background:var(--border);
 .dg-val{font-size:13px;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:4px}
 .detail-memo{margin-top:12px;background:var(--bg);border-radius:var(--r2);padding:12px}
 .detail-memo-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
-.detail-memo-text{font-size:13px;color:var(--text2);line-height:1.6}
+.detail-memo-text{font-size:13px;color:var(--text2);line-height:1.6;white-space:pre-wrap}
 .detail-edit-btn{display:flex;align-items:center;gap:5px;padding:8px 14px;background:none;border:1.5px solid var(--border);border-radius:var(--r2);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);transition:all .12s}
 .detail-edit-btn:hover{background:var(--bg)}
 
@@ -291,8 +292,8 @@ kbd{font-family:inherit;font-size:11px;font-weight:600;background:var(--border);
     <div class="mb">
       <div class="fg"><label class="fl">업무명</label><input class="fi" id="fTitle" placeholder="업무를 입력하세요" autocomplete="off"></div>
       <div class="fr2">
-        <div class="fg"><label class="fl">업무 날짜</label><input class="fi" type="date" id="fDate"></div>
-        <div class="fg"><label class="fl">마감일</label><input class="fi" type="date" id="fDeadline"></div>
+        <div class="fg"><label class="fl">업무 날짜</label><input class="fi" type="datetime-local" id="fDate"></div>
+        <div class="fg"><label class="fl">마감일</label><input class="fi" type="datetime-local" id="fDeadline"></div>
       </div>
       <div class="fr2">
         <div class="fg"><label class="fl">우선순위</label>
@@ -302,7 +303,7 @@ kbd{font-family:inherit;font-size:11px;font-weight:600;background:var(--border);
       </div>
       <div class="fg"><label class="fl">협업파트</label><input class="fi" id="fCollab" placeholder="협업팀 / 파트 (선택)" autocomplete="off"></div>
       <div class="fg"><label class="fl">프로젝트 태그</label><div class="tag-sel" id="tagSel"></div></div>
-      <div class="fg"><label class="fl">메모</label><input class="fi" id="fNote" placeholder="간단한 메모 (선택)" autocomplete="off"></div>
+      <div class="fg"><label class="fl">메모</label><textarea class="fi" id="fNote" placeholder="간단한 메모 (선택)&#10;Enter 또는 Shift+Enter로 줄바꿈" rows="3"></textarea></div>
     </div>
     <div class="mf"><button class="btn-g" id="taskCancel">취소</button><button class="btn-p" id="taskSave">저장</button></div>
   </div>
@@ -417,12 +418,13 @@ function dlState(dl){
   if(dl<t) return 'over'; if(dl===t) return 'tod';
   if(dl<=addDays(t,3)) return 'soon'; return 'norm';
 }
-function dlLabel(dl){
+function dlLabel(dl, dlTime){
   if(!dl) return ''; const t=todayStr(), d=parseD(dl), m=d.getMonth()+1, day=d.getDate();
-  if(dl<t) return `${m}/${day} 초과`;
-  if(dl===t) return '오늘 마감';
-  if(dl===addDays(t,1)) return '내일 마감';
-  return `${m}/${day} 마감`;
+  const tm = dlTime && dlTime!=='00:00' ? ' '+dlTime : '';
+  if(dl<t) return `${m}/${day}${tm} 초과`;
+  if(dl===t) return `오늘${tm} 마감`;
+  if(dl===addDays(t,1)) return `내일${tm} 마감`;
+  return `${m}/${day}${tm} 마감`;
 }
 function isOverdue(task){
   return !task.done && task.deadline && task.deadline < todayStr();
@@ -751,7 +753,7 @@ function renderPanel(){
 // ─── Card HTML ────────────────────────────────────────────────
 function cardHTML(t, compact=false){
   const ds  = dlState(t.deadline);
-  const dl  = dlLabel(t.deadline);
+  const dl  = dlLabel(t.deadline, t.deadlineTime);
   const ov  = isOverdue(t); // fix 6
   const tagsH = (t.tags||[]).map(g=>`<span class="t-tag">${esc(g)}</span>`).join('');
   const asgnH = t.assignee
@@ -866,8 +868,9 @@ function openTaskModal(id){
   const t = id ? tasks.find(x=>x.id===id) : null;
   document.getElementById('modalTitle').textContent = t?'업무 수정':'새 업무';
   document.getElementById('fTitle').value    = t?t.title:'';
-  document.getElementById('fDate').value     = t?(t.date||''):(sel!=='all'&&sel!=='nodate'?sel:todayStr());
-  document.getElementById('fDeadline').value = t?(t.deadline||''):'';
+  const defDate = sel!=='all'&&sel!=='nodate' ? sel : todayStr();
+  document.getElementById('fDate').value     = t ? (t.date ? t.date+'T'+(t.dateTime||'00:00') : '') : defDate+'T00:00';
+  document.getElementById('fDeadline').value = t ? (t.deadline ? t.deadline+'T'+(t.deadlineTime||'00:00') : '') : '';
   document.getElementById('fPriority').value = t?t.priority:'medium';
   document.getElementById('fAssignee').value = t?(t.assignee||''):'';
   document.getElementById('fCollab').value   = t?(t.collab||''):'';
@@ -885,10 +888,16 @@ function saveTask(){
     el.style.borderColor='var(--high)'; el.focus();
     setTimeout(()=>el.style.borderColor='',700); return;
   }
+  const dateRaw = document.getElementById('fDate').value;
+  const deadlineRaw = document.getElementById('fDeadline').value;
+  const dateParts = dateRaw ? dateRaw.split('T') : [];
+  const deadlineParts = deadlineRaw ? deadlineRaw.split('T') : [];
   const data = {
     title,
-    date:     document.getElementById('fDate').value,
-    deadline: document.getElementById('fDeadline').value,
+    date:         dateParts[0] || '',
+    dateTime:     dateParts[1] || '',
+    deadline:     deadlineParts[0] || '',
+    deadlineTime: deadlineParts[1] || '',
     priority: document.getElementById('fPriority').value,
     assignee: document.getElementById('fAssignee').value.trim(),
     collab:   document.getElementById('fCollab').value.trim(),
@@ -905,11 +914,11 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 function openDetailModal(id){
   const t = tasks.find(x=>x.id===id);
   if(!t) return;
-  const ds = dlState(t.deadline), dl = dlLabel(t.deadline);
+  const ds = dlState(t.deadline), dl = dlLabel(t.deadline, t.deadlineTime);
   const tagsH = (t.tags||[]).map(g=>`<span class="t-tag">${esc(g)}</span>`).join('');
   const rows = [
     ['우선순위', `<span class="pri ${t.priority}" style="display:inline-flex"><span class="dot"></span>${PLBL[t.priority]}</span>`],
-    t.date     ? ['업무 날짜', fmtFull(t.date)] : null,
+    t.date     ? ['업무 날짜', fmtFull(t.date) + (t.dateTime && t.dateTime!=='00:00' ? ' '+t.dateTime : '')] : null,
     t.deadline ? ['마감일',    `<span class="dl ${ds}">${dl}</span>`] : null,
     t.assignee ? ['담당자',    `<span class="asgn"><span class="av">${esc(t.assignee.slice(0,1).toUpperCase())}</span>${esc(t.assignee)}</span>`] : null,
     t.collab   ? ['협업파트',  esc(t.collab)] : null,
