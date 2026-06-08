@@ -159,7 +159,8 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 .week-col{width:260px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;transition:border-color .15s,background .15s}
 .week-col.drag-over{background:#EFF6FF !important;border-color:var(--today) !important}
 .week-col.today-col{border-color:#BFDBFE}
-.week-col-head{padding:10px 12px 8px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.week-col-head{padding:10px 12px 8px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .12s}
+.week-col-head:hover{background:var(--bg)}
 .week-col-head.today-head{background:#EFF6FF}
 .wch-info{display:flex;flex-direction:column;gap:1px}
 .wch-dow{font-size:11px;font-weight:700;color:var(--text2)}
@@ -364,7 +365,7 @@ let tasks   = load('bd_tasks',  []);
 let tags    = load('bd_tags',   ['26SS','SNS','패키지','입점사']);
 let events  = load('bd_events', []);
 let sel   = todayStr();   // selected date / 'all' / 'nodate'
-let pview = 'list';       // 'list' | 'week' | 'month'
+let pview = 'week';       // 'list' | 'week' | 'month'
 // ── Navigation state: completely independent, ±1 unit only ──
 let wkStart = getMonday(todayStr());              // always a Monday string
 let moYear  = (()=>{ const d=new Date(); return {y:d.getFullYear(), m:d.getMonth()+1}; })();
@@ -668,7 +669,7 @@ function renderPanel(){
         </div>`).join('');
 
       return `<div class="week-col${isToday?' today-col':''}" data-drop-date="${d}">
-        <div class="week-col-head${isToday?' today-head':''}">
+        <div class="week-col-head${isToday?' today-head':''}" data-sel-date="${d}">
           <div class="wch-info">
             <span class="wch-dow" style="${isWkend&&!isToday?'color:var(--high)':''}">${DOW[dObj.getDay()]}</span>
             <span class="wch-date">${dObj.getMonth()+1}/${dObj.getDate()}</span>
@@ -690,6 +691,15 @@ function renderPanel(){
     });
     body.querySelectorAll('.wch-ev-del').forEach(btn=>{
       btn.addEventListener('click', e=>{ e.stopPropagation(); deleteEvent(btn.dataset.evid); });
+    });
+    body.querySelectorAll('.week-col-head[data-sel-date]').forEach(el=>{
+      el.addEventListener('click', e=>{
+        if(e.target.closest('.wch-add-ev')||e.target.closest('.wch-ev-del')) return;
+        sel = el.dataset.selDate;
+        syncNav(sel);
+        pview = 'list';
+        render();
+      });
     });
 
   // ── Month view ─────────────────────────────────────────────
