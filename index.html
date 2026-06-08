@@ -168,6 +168,10 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 .today-col .wch-dow,.today-col .wch-date{color:var(--today)}
 .wch-add-ev{background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:0;line-height:1;transition:color .12s;flex-shrink:0}
 .wch-add-ev:hover{color:var(--high)}
+.wch-add-task{background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:0 1px;transition:color .12s;flex-shrink:0}
+.wch-add-task:hover{color:var(--accent)}
+.week-col-add{display:flex;align-items:center;gap:5px;padding:7px 8px;margin:4px;border-radius:6px;font-size:11px;font-weight:500;color:var(--text3);cursor:pointer;transition:background .12s,color .12s;flex-shrink:0}
+.week-col-add:hover{background:var(--bg);color:var(--text2)}
 /* fix 7: event banners in week column */
 .wch-ev-banners{flex-shrink:0}
 .wch-ev-banner{display:flex;align-items:center;gap:5px;padding:5px 10px;background:#FEF2F2;border-bottom:1px solid #FECACA;font-size:10px;font-weight:600;color:#991B1B}
@@ -674,8 +678,9 @@ function renderPanel(){
             <span class="wch-dow" style="${isWkend&&!isToday?'color:var(--high)':''}">${DOW[dObj.getDay()]}</span>
             <span class="wch-date">${dObj.getMonth()+1}/${dObj.getDate()}</span>
           </div>
-          <div style="display:flex;align-items:center;gap:6px">
+          <div style="display:flex;align-items:center;gap:4px">
             ${pend>0?`<span style="font-size:10px;font-weight:700;color:var(--text3)">${pend}개</span>`:''}
+            <button class="wch-add-task" data-task-date="${d}" title="업무 추가">+</button>
             <button class="wch-add-ev" data-ev-date="${d}" title="일정 추가">★</button>
           </div>
         </div>
@@ -683,9 +688,19 @@ function renderPanel(){
         <div class="week-col-body" data-drop-date="${d}">
           ${dayTasks.length ? dayTasks.map(t=>cardHTML(t,true)).join('') : `<div class="week-col-empty">업무 없음</div>`}
         </div>
+        <div class="week-col-add" data-task-date="${d}">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          업무 추가
+        </div>
       </div>`;
     }).join('')}</div>`;
 
+    body.querySelectorAll('.wch-add-task').forEach(btn=>{
+      btn.addEventListener('click', e=>{ e.stopPropagation(); openTaskModal(null, btn.dataset.taskDate); });
+    });
+    body.querySelectorAll('.week-col-add').forEach(el=>{
+      el.addEventListener('click', ()=>openTaskModal(null, el.dataset.taskDate));
+    });
     body.querySelectorAll('.wch-add-ev').forEach(btn=>{
       btn.addEventListener('click', e=>{ e.stopPropagation(); openEvModal(btn.dataset.evDate); });
     });
@@ -694,7 +709,7 @@ function renderPanel(){
     });
     body.querySelectorAll('.week-col-head[data-sel-date]').forEach(el=>{
       el.addEventListener('click', e=>{
-        if(e.target.closest('.wch-add-ev')||e.target.closest('.wch-ev-del')) return;
+        if(e.target.closest('.wch-add-ev')||e.target.closest('.wch-ev-del')||e.target.closest('.wch-add-task')) return;
         sel = el.dataset.selDate;
         syncNav(sel);
         pview = 'list';
@@ -873,12 +888,12 @@ function setupDnD(){
 }
 
 // ─── Task Modal ───────────────────────────────────────────────
-function openTaskModal(id){
+function openTaskModal(id, dateOverride){
   editId = id||null; selTags = [];
   const t = id ? tasks.find(x=>x.id===id) : null;
   document.getElementById('modalTitle').textContent = t?'업무 수정':'새 업무';
   document.getElementById('fTitle').value    = t?t.title:'';
-  const defDate = sel!=='all'&&sel!=='nodate' ? sel : todayStr();
+  const defDate = dateOverride || (sel!=='all'&&sel!=='nodate' ? sel : todayStr());
   document.getElementById('fDate').value     = t ? (t.date ? t.date+'T'+(t.dateTime||'00:00') : '') : defDate+'T00:00';
   document.getElementById('fDeadline').value = t ? (t.deadline ? t.deadline+'T'+(t.deadlineTime||'00:00') : '') : '';
   document.getElementById('fPriority').value = t?t.priority:'medium';
