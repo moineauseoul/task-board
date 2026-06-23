@@ -11,13 +11,13 @@ create table if not exists public.members (
 );
 
 create table if not exists public.task_meta (
-  task_id text primary key references public.tasks(id) on delete cascade,
+  task_id uuid primary key references public.tasks(id) on delete cascade,
   status_updated_at timestamptz
 );
 
 create table if not exists public.task_comments (
   id text primary key,
-  task_id text not null references public.tasks(id) on delete cascade,
+  task_id uuid not null references public.tasks(id) on delete cascade,
   author text,
   text text not null,
   created_at timestamptz not null default now()
