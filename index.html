@@ -436,6 +436,18 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;font-family:inherit
   </div>
 </div>
 
+<!-- My Name Modal -->
+<div class="overlay" id="myNameOverlay">
+  <div class="modal" style="max-width:360px">
+    <div class="mh"><div class="mt">내 이름 선택</div></div>
+    <div class="mb">
+      <p style="font-size:13px;color:var(--text2);line-height:1.65">담당 업무 알림을 받을 이름을 선택해주세요.</p>
+      <div class="asgn-sel" id="myNameSel" style="margin-top:4px"></div>
+    </div>
+    <div class="mf"><button class="btn-g" id="myNameSkip">나중에</button><button class="btn-p" id="myNameSave" disabled>선택 완료</button></div>
+  </div>
+</div>
+
 <script>
 // ─── Constants ────────────────────────────────────────────────
 const DOW  = ['일','월','화','수','목','금','토'];
@@ -462,6 +474,9 @@ let moYear  = (()=>{ const d=new Date(); return {y:d.getFullYear(), m:d.getMonth
 let weekOpen = [true, false, false, false];
 let editId=null, delId=null, selTags=[], selAssignees=[], dragId=null;
 let memberFilter = null;
+let myName = localStorage.getItem('bd_my_name') || '';
+let realtimeChannel = null;
+let pendingMyName = '';
 
 // ─── Supabase ─────────────────────────────────────────────────
 // tasks 테이블 컬럼: id, title, date, date_time, deadline, deadline_time,
@@ -1613,6 +1628,51 @@ async function doDelete(){
   closeOvr('confirmOverlay'); closeOvr('detailOverlay');
 }
 
+// ─── My Name & Push Notifications ────────────────────────────
+function renderMyNameSel(){
+  const el = document.getElementById('myNameSel');
+  pendingMyName = '';
+  document.getElementById('myNameSave').disabled = true;
+  if(!members.length){
+    el.innerHTML = '<span class="asgn-empty">먼저 팀원 관리에서 팀원을 추가하세요</span>'; return;
+  }
+  el.innerHTML = members.map(m=>{
+    const col = memberColor(m);
+    return `<button class="asgn-opt" data-myname="${esc(m)}"><span class="av-sm" style="background:${col}">${esc(m.slice(0,1).toUpperCase())}</span>${esc(m)}</button>`;
+  }).join('');
+  el.querySelectorAll('.asgn-opt').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      el.querySelectorAll('.asgn-opt').forEach(b=>{ b.classList.remove('on'); b.style.background=''; b.style.borderColor=''; });
+      const m=btn.dataset.myname, col=memberColor(m);
+      btn.classList.add('on'); btn.style.background=col; btn.style.borderColor=col;
+      pendingMyName=m;
+      document.getElementById('myNameSave').disabled=false;
+    });
+  });
+}
+async function saveMyName(){
+  if(!pendingMyName) return;
+  myName=pendingMyName;
+  localStorage.setItem('bd_my_name', myName);
+  closeOvr('myNameOverlay');
+  if('Notification' in window && Notification.permission==='default') await Notification.requestPermission();
+  setupRealtimeNotifications();
+}
+function setupRealtimeNotifications(){
+  if(!myName || realtimeChannel) return;
+  realtimeChannel = _sb.channel('tasks-notify')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'tasks'},payload=>{
+      const task = rowToTask(payload.new);
+      if((task.assignees||[]).includes(myName)) showTaskNotification(task);
+    })
+    .subscribe();
+}
+function showTaskNotification(task){
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  const body = task.author ? `작성자: ${task.author}` : '새 업무가 배정되었습니다';
+  new Notification(`📋 ${task.title}`, {body, tag:task.id});
+}
+
 // ─── Overlay helpers ──────────────────────────────────────────
 function openOvr(id) { document.getElementById(id).classList.add('open') }
 function closeOvr(id){ document.getElementById(id).classList.remove('open') }
@@ -1644,19 +1704,25 @@ document.getElementById('newTagInput').addEventListener('keydown', e=>{ if(e.key
 document.getElementById('confirmClose').addEventListener('click', ()=>closeOvr('confirmOverlay'));
 document.getElementById('confirmCancel').addEventListener('click',()=>closeOvr('confirmOverlay'));
 document.getElementById('confirmOk').addEventListener('click', doDelete);
+document.getElementById('myNameSkip').addEventListener('click', ()=>closeOvr('myNameOverlay'));
+document.getElementById('myNameSave').addEventListener('click', saveMyName);
 
 // ─── Keyboard ─────────────────────────────────────────────────
 document.addEventListener('keydown', e=>{
   const inInput = ['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName);
   if(e.key==='Escape'){
-    const order = ['confirmOverlay','tagOverlay','membersOverlay','pinOverlay','detailOverlay','evOverlay','taskOverlay'];
+    const order = ['confirmOverlay','tagOverlay','membersOverlay','myNameOverlay','pinOverlay','detailOverlay','evOverlay','taskOverlay'];
     for(const id of order){ if(document.getElementById(id).classList.contains('open')){ if(id==='tagOverlay') renderTagSel(); closeOvr(id); return; } }
   }
   if(e.key==='n'&&!inInput&&!document.querySelector('.overlay.open')) openTaskModal();
 });
 
 // ─── Init ─────────────────────────────────────────────────────
-loadData().then(()=>render()).catch(err=>{ console.error('init error:',err); render(); });
+loadData().then(()=>{
+  render();
+  if(!myName && members.length){ renderMyNameSel(); openOvr('myNameOverlay'); }
+  setupRealtimeNotifications();
+}).catch(err=>{ console.error('init error:',err); render(); });
 </script>
 </body>
 </html>
