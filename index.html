@@ -511,7 +511,7 @@ async function loadData(){
     const remoteTags = (gr.data||[]).map(r=>r.name).filter(Boolean);
     tags = [...new Set([...remoteTags, ...localTags])];
     persistTags();
-    localTags.filter(name=>name && !remoteTags.includes(name)).forEach(name=>saveTagRemote(name));
+    localTags.filter(name=>name && !remoteTags.includes(name)).forEach(name=>saveTagRemote(name).catch(e=>console.error('project_tags migrate:', e)));
   } else {
     console.error('project_tags load:', gr.error);
   }
@@ -520,7 +520,7 @@ async function loadData(){
     const remoteMembers = (mr.data||[]).map(r=>r.name).filter(Boolean);
     members = [...new Set([...remoteMembers, ...localMembers])];
     localStorage.setItem('bd_members', JSON.stringify(members));
-    localMembers.filter(name=>name && !remoteMembers.includes(name)).forEach(name=>saveMemberRemote(name));
+    localMembers.filter(name=>name && !remoteMembers.includes(name)).forEach(name=>saveMemberRemote(name).catch(e=>console.error('members migrate:', e)));
   } else {
     console.error('members load:', mr.error);
   }
@@ -539,12 +539,12 @@ async function loadData(){
       const target = nextMeta[taskId] || (nextMeta[taskId] = { statusUpdatedAt:'', comments:[] });
       if(!target.statusUpdatedAt && meta.statusUpdatedAt){
         target.statusUpdatedAt = meta.statusUpdatedAt;
-        saveTaskStatusRemote(taskId, meta.statusUpdatedAt);
+        saveTaskStatusRemote(taskId, meta.statusUpdatedAt).catch(e=>console.error('task_meta migrate:', e));
       }
       (meta.comments||[]).forEach(c=>{
         if(!target.comments.some(x=>x.id===c.id)){
           target.comments.push(c);
-          saveCommentRemote(taskId, c);
+          saveCommentRemote(taskId, c).catch(e=>console.error('comment migrate:', e));
         }
       });
     });
@@ -561,7 +561,7 @@ async function loadData(){
     localPinnedNotices.forEach(p=>{
       if(!pinMap.has(p.id)){
         pinMap.set(p.id,p);
-        savePinnedNoticeRemote(p);
+        savePinnedNoticeRemote(p).catch(e=>console.error('pinned notice migrate:', e));
       }
     });
     pinnedNotices = [...pinMap.values()].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
@@ -583,44 +583,62 @@ function logSupaError(label, error){ if(error) console.error(label, error); }
 function isUuid(id){
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id || '');
 }
-function saveTagRemote(name){
-  _sb.from('project_tags').upsert({name}).then(({error})=>logSupaError('project_tags save:', error));
+async function saveTagRemote(name){
+  const { data, error } = await _sb.from('project_tags').upsert({name}).select('name');
+  if(error) throw error;
+  assertAffected(data, '태그가 저장되지 않았습니다.');
 }
-function deleteTagRemote(name){
-  _sb.from('project_tags').delete().eq('name', name).then(({error})=>logSupaError('project_tags delete:', error));
+async function deleteTagRemote(name){
+  const { data, error } = await _sb.from('project_tags').delete().eq('name', name).select('name');
+  if(error) throw error;
+  assertAffected(data, '태그가 삭제되지 않았습니다.');
 }
-function saveMemberRemote(name){
-  _sb.from('members').upsert({name}).then(({error})=>logSupaError('members save:', error));
+async function saveMemberRemote(name){
+  const { data, error } = await _sb.from('members').upsert({name}).select('name');
+  if(error) throw error;
+  assertAffected(data, '팀원이 저장되지 않았습니다.');
 }
-function deleteMemberRemote(name){
-  _sb.from('members').delete().eq('name', name).then(({error})=>logSupaError('members delete:', error));
+async function deleteMemberRemote(name){
+  const { data, error } = await _sb.from('members').delete().eq('name', name).select('name');
+  if(error) throw error;
+  assertAffected(data, '팀원이 삭제되지 않았습니다.');
 }
-function saveTaskStatusRemote(taskId, statusUpdatedAt){
+async function saveTaskStatusRemote(taskId, statusUpdatedAt){
   if(!isUuid(taskId)) return;
-  _sb.from('task_meta').upsert({task_id:taskId, status_updated_at:statusUpdatedAt}).then(({error})=>logSupaError('task_meta save:', error));
+  const { data, error } = await _sb.from('task_meta').upsert({task_id:taskId, status_updated_at:statusUpdatedAt}).select('task_id');
+  if(error) throw error;
+  assertAffected(data, '상태 변경 시간이 저장되지 않았습니다.');
 }
-function saveCommentRemote(taskId, comment){
+async function saveCommentRemote(taskId, comment){
   if(!isUuid(taskId)) return;
-  _sb.from('task_comments').upsert({
+  const { data, error } = await _sb.from('task_comments').upsert({
     id:comment.id,
     task_id:taskId,
     author:comment.author||null,
     text:comment.text||'',
     created_at:comment.createdAt||new Date().toISOString(),
-  }).then(({error})=>logSupaError('comment save:', error));
+  }).select('id');
+  if(error) throw error;
+  assertAffected(data, '댓글이 저장되지 않았습니다.');
 }
-function deleteCommentRemote(commentId){
-  _sb.from('task_comments').delete().eq('id', commentId).then(({error})=>logSupaError('comment delete:', error));
+async function deleteCommentRemote(commentId){
+  const { data, error } = await _sb.from('task_comments').delete().eq('id', commentId).select('id');
+  if(error) throw error;
+  assertAffected(data, '댓글이 삭제되지 않았습니다.');
 }
-function savePinnedNoticeRemote(notice){
-  _sb.from('pinned_notices').upsert({
+async function savePinnedNoticeRemote(notice){
+  const { data, error } = await _sb.from('pinned_notices').upsert({
     id:notice.id,
     text:notice.text||'',
     created_at:notice.createdAt||new Date().toISOString(),
-  }).then(({error})=>logSupaError('pinned notice save:', error));
+  }).select('id');
+  if(error) throw error;
+  assertAffected(data, '공지사항이 저장되지 않았습니다.');
 }
-function deletePinnedNoticeRemote(id){
-  _sb.from('pinned_notices').delete().eq('id', id).then(({error})=>logSupaError('pinned notice delete:', error));
+async function deletePinnedNoticeRemote(id){
+  const { data, error } = await _sb.from('pinned_notices').delete().eq('id', id).select('id');
+  if(error) throw error;
+  assertAffected(data, '공지사항이 삭제되지 않았습니다.');
 }
 function assertAffected(data, message){
   if(!Array.isArray(data) || data.length === 0) throw new Error(message);
@@ -1124,7 +1142,8 @@ async function toggle(id){
     t.done=nextDone;
     meta.statusUpdatedAt = nextUpdatedAt;
     persistTaskMeta();
-    saveTaskStatusRemote(id, meta.statusUpdatedAt);
+    try { await saveTaskStatusRemote(id, meta.statusUpdatedAt); }
+    catch(e){ alert('상태 변경 시간 저장에 실패했습니다: ' + e.message); console.error('task_meta save:', e); }
     render();
   }
 }
@@ -1373,7 +1392,7 @@ function setupCommentAuthorPicker(taskId){
     chip.addEventListener('click',()=>setCommentAuthor(chip.dataset.commentAuthor));
   });
 }
-function addComment(taskId){
+async function addComment(taskId){
   const input = document.getElementById('commentInput');
   const authorInput = document.getElementById('commentAuthorInput');
   const text = input.value.trim();
@@ -1386,16 +1405,19 @@ function addComment(taskId){
   commentAuthor = author;
   localStorage.setItem(COMMENT_AUTHOR_KEY, commentAuthor);
   const meta = getTaskMeta(taskId);
-  meta.comments.push({ id:uid(), text, author, createdAt:new Date().toISOString() });
-  saveCommentRemote(taskId, meta.comments[meta.comments.length-1]);
+  const comment = { id:uid(), text, author, createdAt:new Date().toISOString() };
+  try { await saveCommentRemote(taskId, comment); }
+  catch(e){ alert('댓글 저장에 실패했습니다: ' + e.message); console.error('comment save:', e); return; }
+  meta.comments.push(comment);
   persistTaskMeta();
   render();
   openDetailModal(taskId);
 }
-function deleteComment(taskId, commentId){
+async function deleteComment(taskId, commentId){
   const meta = getTaskMeta(taskId);
+  try { await deleteCommentRemote(commentId); }
+  catch(e){ alert('댓글 삭제에 실패했습니다: ' + e.message); console.error('comment delete:', e); return; }
   meta.comments = meta.comments.filter(c=>c.id!==commentId);
-  deleteCommentRemote(commentId);
   persistTaskMeta();
   render();
   openDetailModal(taskId);
@@ -1406,19 +1428,21 @@ function openPinModal(){
   openOvr('pinOverlay');
   setTimeout(()=>document.getElementById('pinText').focus(),160);
 }
-function savePinnedNotice(){
+async function savePinnedNotice(){
   const text = document.getElementById('pinText').value.trim();
   if(!text){ document.getElementById('pinText').focus(); return; }
   const notice = { id:uid(), text, createdAt:new Date().toISOString() };
+  try { await savePinnedNoticeRemote(notice); }
+  catch(e){ alert('공지사항 저장에 실패했습니다: ' + e.message); console.error('pinned notice save:', e); return; }
   pinnedNotices.unshift(notice);
-  savePinnedNoticeRemote(notice);
   persistPinnedNotices();
   render();
   closeOvr('pinOverlay');
 }
-function deletePinnedNotice(id){
+async function deletePinnedNotice(id){
+  try { await deletePinnedNoticeRemote(id); }
+  catch(e){ alert('공지사항 삭제에 실패했습니다: ' + e.message); console.error('pinned notice delete:', e); return; }
   pinnedNotices = pinnedNotices.filter(n=>n.id!==id);
-  deletePinnedNoticeRemote(id);
   persistPinnedNotices();
   render();
 }
@@ -1430,17 +1454,23 @@ function openEvModal(date){
   openOvr('evOverlay');
   setTimeout(()=>document.getElementById('evTitle').focus(),160);
 }
-function saveEvent(){
+async function saveEvent(){
   const date  = document.getElementById('evDate').value;
   const title = document.getElementById('evTitle').value.trim();
   if(!date||!title){ document.getElementById('evTitle').focus(); return; }
   const ev={id:uid(), date, title};
+  const { data, error } = await _sb.from('important_events').insert(ev).select('id');
+  if(error){ alert('일정 저장에 실패했습니다: ' + error.message); console.error('event save:', error); return; }
+  try { assertAffected(data, '일정이 저장되지 않았습니다.'); }
+  catch(e){ alert('일정 저장에 실패했습니다: ' + e.message); console.error('event save:', e); return; }
   events.push(ev);
-  _sb.from('important_events').insert(ev);
   render(); closeOvr('evOverlay');
 }
-function deleteEvent(id){
-  _sb.from('important_events').delete().eq('id',id);
+async function deleteEvent(id){
+  const { data, error } = await _sb.from('important_events').delete().eq('id',id).select('id');
+  if(error){ alert('일정 삭제에 실패했습니다: ' + error.message); console.error('event delete:', error); return; }
+  try { assertAffected(data, '일정이 삭제되지 않았습니다.'); }
+  catch(e){ alert('일정 삭제에 실패했습니다: ' + e.message); console.error('event delete:', e); return; }
   events = events.filter(e=>e.id!==id);
   render();
 }
@@ -1481,22 +1511,25 @@ function renderMemberMgrList(){
   if(!members.length){ el.innerHTML='<span style="font-size:12px;color:var(--text3)">등록된 팀원 없음</span>'; return; }
   el.innerHTML = members.map((m,i)=>`<div class="tmgr-item">${esc(m)}<button class="tmgr-del" data-midx="${i}">✕</button></div>`).join('');
   el.querySelectorAll('.tmgr-del').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const removed = members.splice(+btn.dataset.midx, 1)[0];
+    btn.addEventListener('click',async ()=>{
+      const removed = members[+btn.dataset.midx];
+      try { await deleteMemberRemote(removed); }
+      catch(e){ alert('팀원 삭제에 실패했습니다: ' + e.message); console.error('member delete:', e); return; }
+      members.splice(+btn.dataset.midx, 1);
       if(commentAuthor===removed){
         commentAuthor = '';
         localStorage.removeItem(COMMENT_AUTHOR_KEY);
       }
-      deleteMemberRemote(removed);
       persistMembers(); renderMemberMgrList();
     });
   });
 }
-function addMember(){
+async function addMember(){
   const val = document.getElementById('newMemberInput').value.trim();
   if(!val || members.includes(val)) return;
+  try { await saveMemberRemote(val); }
+  catch(e){ alert('팀원 저장에 실패했습니다: ' + e.message); console.error('member save:', e); return; }
   members.push(val); persistMembers();
-  saveMemberRemote(val);
   document.getElementById('newMemberInput').value=''; renderMemberMgrList();
 }
 
@@ -1524,17 +1557,21 @@ function renderTagMgrList(){
   if(!tags.length){ el.innerHTML='<span style="font-size:12px;color:var(--text3)">등록된 태그 없음</span>'; return; }
   el.innerHTML = tags.map((t,i)=>`<div class="tmgr-item">${esc(t)}<button class="tmgr-del" data-idx="${i}">✕</button></div>`).join('');
   el.querySelectorAll('.tmgr-del').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const removed=tags[+btn.dataset.idx]; tags.splice(+btn.dataset.idx,1);
-      deleteTagRemote(removed);
+    btn.addEventListener('click',async ()=>{
+      const removed=tags[+btn.dataset.idx];
+      try { await deleteTagRemote(removed); }
+      catch(e){ alert('태그 삭제에 실패했습니다: ' + e.message); console.error('tag delete:', e); return; }
+      tags.splice(+btn.dataset.idx,1);
       selTags=selTags.filter(x=>x!==removed); persistTags(); renderTagMgrList();
     });
   });
 }
-function addTag(){
+async function addTag(){
   const val = document.getElementById('newTagInput').value.trim();
   if(!val||tags.includes(val)) return;
-  tags.push(val); persistTags(); saveTagRemote(val); document.getElementById('newTagInput').value=''; renderTagMgrList();
+  try { await saveTagRemote(val); }
+  catch(e){ alert('태그 저장에 실패했습니다: ' + e.message); console.error('tag save:', e); return; }
+  tags.push(val); persistTags(); document.getElementById('newTagInput').value=''; renderTagMgrList();
 }
 
 // ─── Delete confirm ───────────────────────────────────────────
