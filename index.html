@@ -1158,7 +1158,12 @@ function setupDnD(){
       e.preventDefault(); el.classList.remove('drag-over');
       const id = e.dataTransfer.getData('text/plain');
       const task = tasks.find(x=>x.id===id);
-      if(task){ task.deadline=dateKey; _sb.from('tasks').update({deadline:task.deadline}).eq('id',task.id); render(); }
+      if(task){
+        task.deadline=dateKey;
+        task.date=dateKey;
+        _sb.from('tasks').update({deadline:task.deadline, date:task.date}).eq('id',task.id);
+        render();
+      }
     });
   });
 }
@@ -1183,7 +1188,7 @@ function openTaskModal(id, dateOverride){
   setTimeout(()=>document.getElementById('fTitle').focus(),160);
 }
 
-function saveTask(){
+async function saveTask(){
   const title = document.getElementById('fTitle').value.trim();
   if(!title){
     const el=document.getElementById('fTitle');
@@ -1194,8 +1199,8 @@ function saveTask(){
   const deadlineParts = deadlineRaw ? deadlineRaw.split('T') : [];
   const data = {
     title,
-    date:         '',
-    dateTime:     '',
+    date:         deadlineParts[0] || '',
+    dateTime:     deadlineParts[1] || '',
     deadline:     deadlineParts[0] || '',
     deadlineTime: deadlineParts[1] || '',
     priority: document.getElementById('fPriority').value,
@@ -1207,11 +1212,17 @@ function saveTask(){
   };
   if(editId){
     const i=tasks.findIndex(x=>x.id===editId);
-    if(i!==-1){ tasks[i]={...tasks[i],...data}; _sb.from('tasks').update(taskToRow(tasks[i])).eq('id',editId); }
+    if(i!==-1){
+      const nextTask = {...tasks[i],...data};
+      const { error } = await _sb.from('tasks').update(taskToRow(nextTask)).eq('id',editId);
+      if(error){ alert('저장에 실패했습니다: ' + error.message); console.error('task update:', error); return; }
+      tasks[i]=nextTask;
+    }
   } else {
     const t={id:uid(),done:false,...data};
+    const { error } = await _sb.from('tasks').insert(taskToRow(t));
+    if(error){ alert('저장에 실패했습니다: ' + error.message); console.error('task insert:', error); return; }
     tasks.unshift(t);
-    _sb.from('tasks').insert(taskToRow(t));
   }
   render(); closeOvr('taskOverlay');
 }
@@ -1222,7 +1233,7 @@ function uid(){
   );
 }
 
-function copyTask(id){
+async function copyTask(id){
   const src = tasks.find(x=>x.id===id);
   if(!src) return;
   const task = {
@@ -1233,10 +1244,13 @@ function copyTask(id){
     assignees: [...(src.assignees||[])],
     tags: [...(src.tags||[])],
   };
+  if(task.deadline && !task.date) task.date = task.deadline;
+  if(task.deadlineTime && !task.dateTime) task.dateTime = task.deadlineTime;
+  const { error } = await _sb.from('tasks').insert(taskToRow(task));
+  if(error){ alert('복사에 실패했습니다: ' + error.message); console.error('task copy:', error); return; }
   taskMeta[task.id] = { statusUpdatedAt:'', comments:[] };
   persistTaskMeta();
   tasks.unshift(task);
-  _sb.from('tasks').insert(taskToRow(task));
   render();
 }
 
