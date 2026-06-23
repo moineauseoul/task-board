@@ -572,15 +572,9 @@ async function loadData(){
   }
 
   if(!pr.error){
-    const remotePins = (pr.data||[]).map(r=>({id:r.id, text:r.text||'', createdAt:r.created_at||''}));
-    const pinMap = new Map(remotePins.map(p=>[p.id,p]));
-    localPinnedNotices.forEach(p=>{
-      if(!pinMap.has(p.id)){
-        pinMap.set(p.id,p);
-        savePinnedNoticeRemote(p).catch(e=>console.error('pinned notice migrate:', e));
-      }
-    });
-    pinnedNotices = [...pinMap.values()].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+    pinnedNotices = (pr.data||[])
+      .map(r=>({id:r.id, text:r.text||'', createdAt:r.created_at||''}))
+      .sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
     persistPinnedNotices();
   } else {
     console.error('pinned_notices load:', pr.error);
@@ -652,9 +646,8 @@ async function savePinnedNoticeRemote(notice){
   assertAffected(data, '공지사항이 저장되지 않았습니다.');
 }
 async function deletePinnedNoticeRemote(id){
-  const { data, error } = await _sb.from('pinned_notices').delete().eq('id', id).select('id');
+  const { error } = await _sb.from('pinned_notices').delete().eq('id', id);
   if(error) throw error;
-  assertAffected(data, '공지사항이 삭제되지 않았습니다.');
 }
 function assertAffected(data, message){
   if(!Array.isArray(data) || data.length === 0) throw new Error(message);
