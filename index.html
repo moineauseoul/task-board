@@ -1267,9 +1267,9 @@ async function saveTask(){
     const i=tasks.findIndex(x=>x.id===editId);
     if(i!==-1){
       const nextTask = {...tasks[i],...data};
-      const { data, error } = await _sb.from('tasks').update(taskToRow(nextTask)).eq('id',editId).select('id');
+      const { data: updData, error } = await _sb.from('tasks').update(taskToRow(nextTask)).eq('id',editId).select('id');
       if(error){ alert('저장에 실패했습니다: ' + error.message); console.error('task update:', error); return; }
-      try { assertAffected(data, '수정된 업무가 없습니다. Supabase tasks update 정책을 확인하세요.'); }
+      try { assertAffected(updData, '수정된 업무가 없습니다. Supabase tasks update 정책을 확인하세요.'); }
       catch(e){ alert('저장에 실패했습니다: ' + e.message); console.error('task update:', e); return; }
       tasks[i]=nextTask;
     }
