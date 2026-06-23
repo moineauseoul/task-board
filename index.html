@@ -622,6 +622,9 @@ function savePinnedNoticeRemote(notice){
 function deletePinnedNoticeRemote(id){
   _sb.from('pinned_notices').delete().eq('id', id).then(({error})=>logSupaError('pinned notice delete:', error));
 }
+function assertAffected(data, message){
+  if(!Array.isArray(data) || data.length === 0) throw new Error(message);
+}
 
 // ─── Date utils ───────────────────────────────────────────────
 // fmt: 로컬 시간 기준 YYYY-MM-DD 포맷 (toISOString은 UTC 기준이라 KST 등에서 날짜 어긋남)
@@ -1114,8 +1117,10 @@ async function toggle(id){
     const nextDone = !t.done;
     const meta = getTaskMeta(id);
     const nextUpdatedAt = new Date().toISOString();
-    const { error } = await _sb.from('tasks').update({done:nextDone}).eq('id',id);
+    const { data, error } = await _sb.from('tasks').update({done:nextDone}).eq('id',id).select('id');
     if(error){ alert('상태 변경에 실패했습니다: ' + error.message); console.error('task toggle:', error); return; }
+    try { assertAffected(data, '변경된 업무가 없습니다. Supabase tasks update 정책을 확인하세요.'); }
+    catch(e){ alert('상태 변경에 실패했습니다: ' + e.message); console.error('task toggle:', e); return; }
     t.done=nextDone;
     meta.statusUpdatedAt = nextUpdatedAt;
     persistTaskMeta();
@@ -1164,7 +1169,11 @@ function setupDnD(){
       if(task){
         task.deadline=dateKey;
         task.date=dateKey;
-        _sb.from('tasks').update({deadline:task.deadline, date:task.date}).eq('id',task.id);
+        _sb.from('tasks').update({deadline:task.deadline, date:task.date}).eq('id',task.id).select('id')
+          .then(({data,error})=>{
+            if(error) console.error('task date update:', error);
+            else if(!data?.length) console.error('task date update: no rows affected');
+          });
         render();
       }
     });
@@ -1218,8 +1227,10 @@ async function saveTask(){
     const i=tasks.findIndex(x=>x.id===editId);
     if(i!==-1){
       const nextTask = {...tasks[i],...data};
-      const { error } = await _sb.from('tasks').update(taskToRow(nextTask)).eq('id',editId);
+      const { data, error } = await _sb.from('tasks').update(taskToRow(nextTask)).eq('id',editId).select('id');
       if(error){ alert('저장에 실패했습니다: ' + error.message); console.error('task update:', error); return; }
+      try { assertAffected(data, '수정된 업무가 없습니다. Supabase tasks update 정책을 확인하세요.'); }
+      catch(e){ alert('저장에 실패했습니다: ' + e.message); console.error('task update:', e); return; }
       tasks[i]=nextTask;
     }
   } else {
@@ -1530,8 +1541,10 @@ function addTag(){
 function openConfirm(id){ delId=id; openOvr('confirmOverlay'); }
 async function doDelete(){
   if(delId){
-    const { error } = await _sb.from('tasks').delete().eq('id',delId);
+    const { data, error } = await _sb.from('tasks').delete().eq('id',delId).select('id');
     if(error){ alert('삭제에 실패했습니다: ' + error.message); console.error('task delete:', error); return; }
+    try { assertAffected(data, '삭제된 업무가 없습니다. Supabase tasks delete 정책을 확인하세요.'); }
+    catch(e){ alert('삭제에 실패했습니다: ' + e.message); console.error('task delete:', e); return; }
     tasks=tasks.filter(x=>x.id!==delId);
     delete taskMeta[delId];
     _sb.from('task_meta').delete().eq('task_id',delId);

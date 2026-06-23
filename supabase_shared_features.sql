@@ -13,6 +13,17 @@ alter table public.tasks
   add column if not exists tags text[] not null default '{}',
   add column if not exists done boolean not null default false;
 
+alter table public.tasks enable row level security;
+
+drop policy if exists "public read tasks" on public.tasks;
+drop policy if exists "public insert tasks" on public.tasks;
+drop policy if exists "public update tasks" on public.tasks;
+drop policy if exists "public delete tasks" on public.tasks;
+create policy "public read tasks" on public.tasks for select using (true);
+create policy "public insert tasks" on public.tasks for insert with check (true);
+create policy "public update tasks" on public.tasks for update using (true) with check (true);
+create policy "public delete tasks" on public.tasks for delete using (true);
+
 create table if not exists public.members (
   name text primary key,
   created_at timestamptz not null default now()
