@@ -98,6 +98,13 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 .ev-banner-txt{flex:1;font-size:13px;font-weight:500;color:#991B1B}
 .ev-banner-del{background:none;border:none;cursor:pointer;color:#FCA5A5;font-size:16px;line-height:1;padding:0 2px;transition:color .12s}
 .ev-banner-del:hover{color:var(--high)}
+.pin-bar{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;flex-shrink:0}
+.pin-card{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--r2)}
+.pin-ico{font-size:13px;line-height:1.4;color:#B45309;flex-shrink:0}
+.pin-txt{flex:1;font-size:12px;font-weight:500;line-height:1.5;color:#92400E;white-space:pre-wrap}
+.pin-del{background:none;border:none;cursor:pointer;color:#D97706;font-size:16px;line-height:1;padding:0 2px;transition:color .12s}
+.pin-del:hover{color:var(--high)}
+.comment-ico{display:inline-flex;align-items:center;gap:3px;color:var(--text3);font-size:11px;font-weight:600}
 
 /* ── Panel body ───────────────────────────────────────────── */
 .panel-body{flex:1;overflow-y:auto;padding:20px 28px}
@@ -114,9 +121,12 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 .task-card:hover{border-color:var(--border2);box-shadow:var(--sh);transform:translateY(-1px)}
 .task-card.done{opacity:.45}
 .task-card.dragging{opacity:.25;transform:scale(.97);cursor:grabbing !important;box-shadow:none}
-/* fix 6: overdue highlight */
 .task-card.overdue:not(.done){background:#FFF8F8;border-color:#FECACA}
 .task-card.overdue:not(.done):hover{background:#FFF5F5;border-color:#FCA5A5;box-shadow:0 2px 8px rgba(220,38,38,.12)}
+.task-card.urgent:not(.done):not(.overdue){background:#FFFBFB;border-color:#FCA5A5}
+.task-card.urgent:not(.done):not(.overdue):hover{background:#FFF5F5;border-color:var(--high)}
+.card-footer{display:flex;align-items:center;gap:6px;margin-top:5px}
+.card-author{font-size:10px;color:var(--text3)}
 .card-stripe{width:3px;flex-shrink:0}
 .task-card.high .card-stripe{background:var(--high)}
 .task-card.medium .card-stripe{background:var(--medium)}
@@ -138,8 +148,8 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 .t-tag{font-size:11px;font-weight:500;padding:2px 8px;border-radius:4px;background:#EFEEEB;color:var(--text2)}
 .dl{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:2px 7px;border-radius:4px}
 .dl.over{color:var(--high);background:#FEF2F2}
-.dl.tod{color:var(--medium);background:#FFFBEB}
-.dl.soon{color:#7C3AED;background:#F5F3FF}
+.dl.tod{color:#B91C1C;background:#FEE2E2;font-weight:700}
+.dl.soon{color:#B91C1C;background:#FEE2E2;font-weight:700}
 .dl.norm{color:var(--text2);background:#F3F2EF}
 .asgn{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)}
 .av{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;background:linear-gradient(135deg,#667EEA,#764BA2)}
@@ -264,6 +274,44 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;font-family:inherit
 .detail-memo-text{font-size:13px;color:var(--text2);line-height:1.6;white-space:pre-wrap}
 .detail-edit-btn{display:flex;align-items:center;gap:5px;padding:8px 14px;background:none;border:1.5px solid var(--border);border-radius:var(--r2);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);transition:all .12s}
 .detail-edit-btn:hover{background:var(--bg)}
+.comments-box{margin-top:12px;background:var(--bg);border-radius:var(--r2);padding:12px}
+.comments-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.comments-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
+.comment-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.comment-item{display:flex;align-items:flex-start;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px}
+.comment-body{flex:1;min-width:0}
+.comment-meta{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.comment-author{font-size:11px;font-weight:700;color:var(--text)}
+.comment-text{font-size:12px;line-height:1.55;color:var(--text);white-space:pre-wrap}
+.comment-time{font-size:10px;color:var(--text3)}
+.comment-del{border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:13px;line-height:1;padding:2px}
+.comment-del:hover{color:var(--high)}
+.comment-form{display:flex;flex-direction:column;gap:8px}
+.comment-author-panel{display:flex;flex-direction:column;gap:5px}
+.comment-author-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
+.comment-author-chips{display:flex;flex-wrap:wrap;gap:5px}
+.comment-author-chips.need-selection{outline:2px solid #FCA5A5;outline-offset:3px;border-radius:6px}
+.comment-member-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 8px 4px 5px;border:1px solid var(--border);border-radius:5px;background:var(--surface);font-family:inherit;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer}
+.comment-member-chip.on{border-color:var(--accent);background:var(--accent);color:#fff}
+.comment-member-chip.on .av-sm{border-color:rgba(255,255,255,.3)}
+.comment-add-row{display:flex;gap:6px}
+.comment-add-row .fi{min-height:38px;resize:vertical}
+.comment-add-row .btn-tag{align-self:flex-start}
+
+/* ── Assignee multi-select ────────────────────────────────── */
+.asgn-sel{display:flex;flex-wrap:wrap;gap:5px;min-height:36px}
+.asgn-opt{display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 5px;border-radius:5px;border:1.5px solid var(--border);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);background:var(--surface);transition:all .12s}
+.asgn-opt:hover{border-color:var(--border2)}
+.asgn-opt.on{color:#fff}
+.asgn-opt.on .av-sm{border-color:rgba(255,255,255,.3)}
+.asgn-empty{font-size:12px;color:var(--text3)}
+/* Avatar sizes */
+.av-sm{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;flex-shrink:0}
+/* Stacked avatars on card */
+.asgn-row{display:inline-flex;align-items:center}
+.asgn-row .av{margin-right:-5px;border:1.5px solid var(--surface);flex-shrink:0}
+.asgn-row .av:last-child{margin-right:0}
+.av-more{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;flex-shrink:0;background:var(--text3);border:1.5px solid var(--surface)}
 
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
@@ -282,6 +330,10 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;font-family:inherit
         <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1L6.8 4.2l3.4.3-2.6 2.3.8 3.3L5.5 8.5 2.6 10l.8-3.3L.8 4.5l3.4-.3z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none"/></svg>
         중요 일정 추가
       </button>
+      <button class="ev-new-btn" id="membersBtn" style="border-color:#E0E7FF;color:#4F46E5">
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="4.5" cy="3.5" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M1 9.5c0-1.933 1.567-3.5 3.5-3.5S8 7.567 8 9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M8.5 5.5v3M10 7H7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        팀원 관리
+      </button>
     </div>
     <div class="sb-scroll" id="dateNav"></div>
   </aside>
@@ -297,17 +349,17 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;font-family:inherit
     <div class="mh"><div class="mt" id="modalTitle">새 업무</div><button class="mc-btn" id="taskClose">✕</button></div>
     <div class="mb">
       <div class="fg"><label class="fl">업무명</label><input class="fi" id="fTitle" placeholder="업무를 입력하세요" autocomplete="off"></div>
-      <div class="fr2">
-        <div class="fg"><label class="fl">업무 날짜</label><input class="fi" type="datetime-local" id="fDate"></div>
-        <div class="fg"><label class="fl">마감일</label><input class="fi" type="datetime-local" id="fDeadline"></div>
-      </div>
+      <div class="fg"><label class="fl">마감일</label><input class="fi" type="datetime-local" id="fDeadline"></div>
       <div class="fr2">
         <div class="fg"><label class="fl">우선순위</label>
           <select class="fs" id="fPriority"><option value="high">높음 (긴급)</option><option value="medium" selected>보통</option><option value="low">낮음</option></select>
         </div>
-        <div class="fg"><label class="fl">담당자</label><input class="fi" id="fAssignee" placeholder="이름" autocomplete="off"></div>
+        <div class="fg"><label class="fl">담당자 <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">(복수 선택 가능)</span></label><div class="asgn-sel" id="asgnSel"></div></div>
       </div>
-      <div class="fg"><label class="fl">협업파트</label><input class="fi" id="fCollab" placeholder="협업팀 / 파트 (선택)" autocomplete="off"></div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">작성자</label><input class="fi" id="fAuthor" placeholder="이름" autocomplete="off"></div>
+        <div class="fg"><label class="fl">협업파트</label><input class="fi" id="fCollab" placeholder="협업팀 / 파트 (선택)" autocomplete="off"></div>
+      </div>
       <div class="fg"><label class="fl">프로젝트 태그</label><div class="tag-sel" id="tagSel"></div></div>
       <div class="fg"><label class="fl">메모</label><textarea class="fi" id="fNote" placeholder="간단한 메모 (선택)&#10;Enter 또는 Shift+Enter로 줄바꿈" rows="3"></textarea></div>
     </div>
@@ -333,6 +385,31 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;font-family:inherit
       <div class="fg"><label class="fl">일정명</label><input class="fi" id="evTitle" placeholder="중요 일정 내용 입력" autocomplete="off"></div>
     </div>
     <div class="mf"><button class="btn-g" id="evCancel">취소</button><button class="btn-p" id="evSave">저장</button></div>
+  </div>
+</div>
+
+<!-- Pinned Notice Modal -->
+<div class="overlay" id="pinOverlay">
+  <div class="modal" style="max-width:420px">
+    <div class="mh"><div class="mt">공지사항 고정</div><button class="mc-btn" id="pinClose">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">공지 내용</label><textarea class="fi" id="pinText" placeholder="주간 보드 상단에 고정할 내용을 입력하세요" rows="4"></textarea></div>
+    </div>
+    <div class="mf"><button class="btn-g" id="pinCancel">취소</button><button class="btn-p" id="pinSave">고정</button></div>
+  </div>
+</div>
+
+<!-- Members Modal -->
+<div class="overlay" id="membersOverlay">
+  <div class="modal" style="max-width:380px">
+    <div class="mh"><div class="mt">팀원 관리</div><button class="mc-btn" id="membersClose">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">팀원 추가</label>
+        <div class="t-add-row"><input class="fi" id="newMemberInput" placeholder="이름" maxlength="20" autocomplete="off"><button class="btn-tag" id="doAddMember">추가</button></div>
+      </div>
+      <div class="fg"><label class="fl">팀원 목록</label><div class="tmgr-list" id="memberMgrList"></div></div>
+    </div>
+    <div class="mf"><button class="btn-p" id="membersDone">완료</button></div>
   </div>
 </div>
 
@@ -364,10 +441,17 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;font-family:inherit
 const DOW  = ['일','월','화','수','목','금','토'];
 const DOWF = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
 const PLBL = {high:'높음',medium:'보통',low:'낮음'};
+const TASK_META_KEY = 'bd_task_meta';
+const PINNED_NOTICE_KEY = 'bd_pinned_notices';
+const COMMENT_AUTHOR_KEY = 'bd_comment_author';
 
 // ─── State ────────────────────────────────────────────────────
 let tasks   = [];
 let tags    = (()=>{ try{ return JSON.parse(localStorage.getItem('bd_tags'))||['26SS','SNS','패키지','입점사']; }catch{ return ['26SS','SNS','패키지','입점사']; } })();
+let members = (()=>{ try{ return JSON.parse(localStorage.getItem('bd_members'))||[]; }catch{ return []; } })();
+let taskMeta = (()=>{ try{ return JSON.parse(localStorage.getItem(TASK_META_KEY))||{}; }catch{ return {}; } })();
+let pinnedNotices = (()=>{ try{ return JSON.parse(localStorage.getItem(PINNED_NOTICE_KEY))||[]; }catch{ return []; } })();
+let commentAuthor = localStorage.getItem(COMMENT_AUTHOR_KEY) || '';
 let events  = [];
 let sel   = todayStr();   // selected date / 'all' / 'nodate'
 let pview = 'week';       // 'list' | 'week' | 'month'
@@ -376,27 +460,30 @@ let wkStart = getMonday(todayStr());              // always a Monday string
 let moYear  = (()=>{ const d=new Date(); return {y:d.getFullYear(), m:d.getMonth()+1}; })();
 // fix 1: which week groups are open (4 groups, 0 = current week open by default)
 let weekOpen = [true, false, false, false];
-let editId=null, delId=null, selTags=[], dragId=null;
+let editId=null, delId=null, selTags=[], selAssignees=[], dragId=null;
 
 // ─── Supabase ─────────────────────────────────────────────────
 // tasks 테이블 컬럼: id, title, date, date_time, deadline, deadline_time,
-//   priority, assignee, collab, note, tags(text[]), done
+//   priority, assignee, author, collab, note, tags(text[]), done
 // important_events 테이블 컬럼: id, date, title
 const _sb = window.supabase.createClient(
   'https://rkuicfxxtjhcmymqzenm.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrdWljZnh4dGpoY215bXF6ZW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTkxOTcsImV4cCI6MjA5NzczNTE5N30.08Yj4UfkJPri-yhdzyYstDMBwKxXqoHqP6t11p3Dde0'
 );
 function taskToRow(t){
+  const asgns = t.assignees||[];
   return { id:t.id, title:t.title, date:t.date||null, date_time:t.dateTime||null,
     deadline:t.deadline||null, deadline_time:t.deadlineTime||null,
-    priority:t.priority, assignee:t.assignee||null, collab:t.collab||null,
-    note:t.note||null, tags:t.tags||[], done:t.done };
+    priority:t.priority, assignee:asgns.length?JSON.stringify(asgns):null,
+    author:t.author||null, collab:t.collab||null, note:t.note||null, tags:t.tags||[], done:t.done };
 }
 function rowToTask(r){
+  // assignee 컬럼: JSON 배열 문자열 또는 구버전 단일 문자열 모두 지원
+  const parseAsgns = v=>{ if(!v) return []; try{ const p=JSON.parse(v); return Array.isArray(p)?p:[v]; }catch{ return [v]; } };
   return { id:r.id, title:r.title, date:r.date||'', dateTime:r.date_time||'',
     deadline:r.deadline||'', deadlineTime:r.deadline_time||'',
-    priority:r.priority||'medium', assignee:r.assignee||'', collab:r.collab||'',
-    note:r.note||'', tags:Array.isArray(r.tags)?r.tags:[], done:!!r.done };
+    priority:r.priority||'medium', assignees:parseAsgns(r.assignee), author:r.author||'',
+    collab:r.collab||'', note:r.note||'', tags:Array.isArray(r.tags)?r.tags:[], done:!!r.done };
 }
 async function loadData(){
   const [tr, er] = await Promise.all([
@@ -409,6 +496,14 @@ async function loadData(){
   events = (er.data||[]).map(r=>({id:r.id, date:r.date, title:r.title}));
 }
 function persistTags(){ localStorage.setItem('bd_tags', JSON.stringify(tags)); }
+function persistMembers(){ localStorage.setItem('bd_members', JSON.stringify(members)); }
+function persistTaskMeta(){ localStorage.setItem(TASK_META_KEY, JSON.stringify(taskMeta)); }
+function persistPinnedNotices(){ localStorage.setItem(PINNED_NOTICE_KEY, JSON.stringify(pinnedNotices)); }
+function getTaskMeta(id){
+  if(!taskMeta[id]) taskMeta[id] = { statusUpdatedAt:'', comments:[] };
+  taskMeta[id].comments = taskMeta[id].comments || [];
+  return taskMeta[id];
+}
 
 // ─── Date utils ───────────────────────────────────────────────
 // fmt: 로컬 시간 기준 YYYY-MM-DD 포맷 (toISOString은 UTC 기준이라 KST 등에서 날짜 어긋남)
@@ -437,6 +532,13 @@ function fmtFull(s){
   if(s===addDays(t,-1)) return '어제';
   const d=parseD(s); return `${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`;
 }
+function fmtDateTime(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  if(Number.isNaN(d.getTime())) return '';
+  const p = n=>String(n).padStart(2,'0');
+  return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
 function fmtPanelTitle(s){
   if(s==='all') return '전체 업무';
   if(s==='nodate') return '날짜 미정';
@@ -462,7 +564,7 @@ function isOverdue(task){
 }
 
 // ─── Filtering ────────────────────────────────────────────────
-function tasksFor(k){ if(k==='all') return [...tasks]; if(k==='nodate') return tasks.filter(t=>!t.date); return tasks.filter(t=>t.date===k) }
+function tasksFor(k){ if(k==='all') return [...tasks]; if(k==='nodate') return tasks.filter(t=>!t.deadline); return tasks.filter(t=>t.deadline===k) }
 function pendingCnt(k){ return tasksFor(k).filter(t=>!t.done).length }
 function eventsFor(date){ return events.filter(e=>e.date===date) }
 function hasEv(date){ return eventsFor(date).length>0 }
@@ -640,7 +742,7 @@ function renderPanel(){
 
     if(sel==='all'){
       const grps={};
-      list.forEach(t=>{ const k=t.date||'__nd__'; (grps[k]=grps[k]||[]).push(t); });
+      list.forEach(t=>{ const k=t.deadline||'__nd__'; (grps[k]=grps[k]||[]).push(t); });
       const keys=Object.keys(grps).sort((a,b)=>{ if(a==='__nd__') return 1; if(b==='__nd__') return -1; return a.localeCompare(b); });
       bodyHTML += keys.map(k=>{
         const grp=sorted(grps[k]), p=grp.filter(t=>!t.done).length;
@@ -677,12 +779,20 @@ function renderPanel(){
           <button class="ph-nav-btn" data-nav="next">›</button>
           <span style="font-size:12px;color:var(--text2);font-weight:500;margin-left:4px">${weekLabel}</span>
         </div>
+        <button class="ev-add-btn" id="pinNoticeBtn">공지 고정</button>
         ${tabs}
       </div>`;
+    document.getElementById('pinNoticeBtn')?.addEventListener('click', openPinModal);
 
     const t = todayStr();
     body.className = 'panel-body week-mode';
-    body.innerHTML = `<div class="week-wrap">${weekDates.map(d=>{
+    const pinnedHtml = pinnedNotices.length ? `<div class="pin-bar">${pinnedNotices.map(n=>`
+      <div class="pin-card">
+        <span class="pin-ico">★</span>
+        <div class="pin-txt">${esc(n.text)}</div>
+        <button class="pin-del" data-pin-id="${n.id}">×</button>
+      </div>`).join('')}</div>` : '';
+    body.innerHTML = `${pinnedHtml}<div class="week-wrap">${weekDates.map(d=>{
       const dObj   = parseD(d);
       const isToday = d===t;
       const isWkend = dObj.getDay()===0||dObj.getDay()===6;
@@ -720,6 +830,9 @@ function renderPanel(){
         </div>
       </div>`;
     }).join('')}</div>`;
+    body.querySelectorAll('.pin-del').forEach(btn=>{
+      btn.addEventListener('click', e=>{ e.stopPropagation(); deletePinnedNotice(btn.dataset.pinId); });
+    });
 
     body.querySelectorAll('.wch-add-task').forEach(btn=>{
       btn.addEventListener('click', e=>{ e.stopPropagation(); openTaskModal(null, btn.dataset.taskDate); });
@@ -803,28 +916,38 @@ function renderPanel(){
 
 // ─── Card HTML ────────────────────────────────────────────────
 function cardHTML(t, compact=false){
-  const ds  = dlState(t.deadline);
-  const dl  = dlLabel(t.deadline, t.deadlineTime);
-  const ov  = isOverdue(t); // fix 6
+  const ds   = dlState(t.deadline);
+  const dl   = dlLabel(t.deadline, t.deadlineTime);
+  const ov   = isOverdue(t);
+  const tod  = todayStr();
+  const isUrgent = !t.done && t.deadline && t.deadline>=tod && t.deadline<=addDays(tod,3);
   const tagsH = (t.tags||[]).map(g=>`<span class="t-tag">${esc(g)}</span>`).join('');
-  const asgnH = t.assignee
-    ? `<span class="asgn"><span class="av">${esc(t.assignee.slice(0,1).toUpperCase())}</span>${esc(t.assignee)}</span>` : '';
+  const asgns = t.assignees||[];
+  const MAX_AV = compact ? 2 : 4;
+  const asgnH = asgns.length
+    ? `<span class="asgn-row">${asgns.slice(0,MAX_AV).map(m=>`<span class="av" style="background:${memberColor(m)}" title="${esc(m)}">${esc(m.slice(0,1).toUpperCase())}</span>`).join('')}${asgns.length>MAX_AV?`<span class="av-more">+${asgns.length-MAX_AV}</span>`:''}</span>`
+    : '';
   const dlH = dl
     ? `<span class="dl ${ds}"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x=".75" y="1.75" width="8.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M3 .75v2M7 .75v2M.75 4.75h8.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>${dl}</span>` : '';
   const memoH = t.note
     ? `<span class="memo-ico" title="${esc(t.note)}"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.5" y="1.5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M3.5 4h5M3.5 6h5M3.5 8h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>` : '';
+  const meta = getTaskMeta(t.id);
+  const commentH = meta.comments.length ? `<span class="comment-ico">댓글 ${meta.comments.length}</span>` : '';
+  const authorH = t.author && !compact ? `<div class="card-footer"><span class="card-author">✍ ${esc(t.author)}</span></div>` : '';
 
-  return `<div class="task-card ${t.priority}${t.done?' done':''}${compact?' compact':''}${ov?' overdue':''}" data-id="${t.id}" draggable="true">
+  return `<div class="task-card ${t.priority}${t.done?' done':''}${compact?' compact':''}${ov?' overdue':''}${isUrgent?' urgent':''}" data-id="${t.id}" draggable="true">
     <div class="card-stripe"></div>
     <div class="card-inner">
       <div class="chk${t.done?' on':''}" data-action="toggle" data-id="${t.id}"></div>
       <div class="card-body" data-action="detail" data-id="${t.id}">
         <div class="card-title">${esc(t.title)}</div>
-        <div class="card-meta"><span class="pri ${t.priority}"><span class="dot"></span>${PLBL[t.priority]}</span>${tagsH}${dlH}${asgnH}${memoH}</div>
+        <div class="card-meta"><span class="pri ${t.priority}"><span class="dot"></span>${PLBL[t.priority]}</span>${tagsH}${dlH}${asgnH}${memoH}${commentH}</div>
+        ${authorH}
       </div>
     </div>
     <div class="card-actions">
       <button class="ic" data-action="edit" data-id="${t.id}" title="수정"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8.5 2 11 4.5 4.5 11H2V8.5L8.5 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></button>
+      <button class="ic" data-action="copy" data-id="${t.id}" title="복사"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="4.5" y="4.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 8.5H2A1.5 1.5 0 01.5 7V2A1.5 1.5 0 012 .5h5A1.5 1.5 0 018.5 2v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
       <button class="ic del" data-action="del" data-id="${t.id}" title="삭제"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3.5h9M5 3.5V2.5h3V3.5M4 3.5l.5 7h4l.5-7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
   </div>`;
@@ -862,13 +985,21 @@ document.addEventListener('click', e=>{
   if(action==='detail'){ openDetailModal(id); return; }
   if(action==='toggle'){ e.stopPropagation(); toggle(id); return; }
   if(action==='edit')  { e.stopPropagation(); closeOvr('detailOverlay'); openTaskModal(id); return; }
+  if(action==='copy')  { e.stopPropagation(); copyTask(id); return; }
   if(action==='del')   { e.stopPropagation(); closeOvr('detailOverlay'); openConfirm(id); return; }
 });
 
 // ─── Toggle done ──────────────────────────────────────────────
 function toggle(id){
   const t = tasks.find(x=>x.id===id);
-  if(t){ t.done=!t.done; _sb.from('tasks').update({done:t.done}).eq('id',id); render(); }
+  if(t){
+    t.done=!t.done;
+    const meta = getTaskMeta(id);
+    meta.statusUpdatedAt = new Date().toISOString();
+    persistTaskMeta();
+    _sb.from('tasks').update({done:t.done}).eq('id',id);
+    render();
+  }
 }
 
 // ─── Drag & Drop ──────────────────────────────────────────────
@@ -908,7 +1039,7 @@ function setupDnD(){
       e.preventDefault(); el.classList.remove('drag-over');
       const id = e.dataTransfer.getData('text/plain');
       const task = tasks.find(x=>x.id===id);
-      if(task){ task.date=dateKey; _sb.from('tasks').update({date:task.date}).eq('id',task.id); render(); }
+      if(task){ task.deadline=dateKey; _sb.from('tasks').update({deadline:task.deadline}).eq('id',task.id); render(); }
     });
   });
 }
@@ -919,11 +1050,12 @@ function openTaskModal(id, dateOverride){
   const t = id ? tasks.find(x=>x.id===id) : null;
   document.getElementById('modalTitle').textContent = t?'업무 수정':'새 업무';
   document.getElementById('fTitle').value    = t?t.title:'';
-  const defDate = dateOverride || (sel!=='all'&&sel!=='nodate' ? sel : todayStr());
-  document.getElementById('fDate').value     = t ? (t.date ? t.date+'T'+(t.dateTime||'00:00') : '') : defDate+'T00:00';
-  document.getElementById('fDeadline').value = t ? (t.deadline ? t.deadline+'T'+(t.deadlineTime||'00:00') : '') : '';
+  const defDate = dateOverride || (sel!=='all'&&sel!=='nodate' ? sel : '');
+  document.getElementById('fDeadline').value = t ? (t.deadline ? t.deadline+'T'+(t.deadlineTime||'00:00') : '') : (defDate ? defDate+'T00:00' : '');
   document.getElementById('fPriority').value = t?t.priority:'medium';
-  document.getElementById('fAssignee').value = t?(t.assignee||''):'';
+  selAssignees = t?[...(t.assignees||[])]:[];
+  renderAsgnSel();
+  document.getElementById('fAuthor').value   = t?(t.author||''):'';
   document.getElementById('fCollab').value   = t?(t.collab||''):'';
   document.getElementById('fNote').value     = t?(t.note||''):'';
   selTags = t?[...(t.tags||[])]:[];
@@ -939,18 +1071,17 @@ function saveTask(){
     el.style.borderColor='var(--high)'; el.focus();
     setTimeout(()=>el.style.borderColor='',700); return;
   }
-  const dateRaw = document.getElementById('fDate').value;
   const deadlineRaw = document.getElementById('fDeadline').value;
-  const dateParts = dateRaw ? dateRaw.split('T') : [];
   const deadlineParts = deadlineRaw ? deadlineRaw.split('T') : [];
   const data = {
     title,
-    date:         dateParts[0] || '',
-    dateTime:     dateParts[1] || '',
+    date:         '',
+    dateTime:     '',
     deadline:     deadlineParts[0] || '',
     deadlineTime: deadlineParts[1] || '',
     priority: document.getElementById('fPriority').value,
-    assignee: document.getElementById('fAssignee').value.trim(),
+    assignees: [...selAssignees],
+    author:   document.getElementById('fAuthor').value.trim(),
     collab:   document.getElementById('fCollab').value.trim(),
     note:     document.getElementById('fNote').value.trim(),
     tags:     [...selTags],
@@ -967,17 +1098,62 @@ function saveTask(){
 }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7) }
 
+function copyTask(id){
+  const src = tasks.find(x=>x.id===id);
+  if(!src) return;
+  const task = {
+    ...src,
+    id: uid(),
+    title: `${src.title} 복사본`,
+    done: false,
+    assignees: [...(src.assignees||[])],
+    tags: [...(src.tags||[])],
+  };
+  taskMeta[task.id] = { statusUpdatedAt:'', comments:[] };
+  persistTaskMeta();
+  tasks.unshift(task);
+  _sb.from('tasks').insert(taskToRow(task));
+  render();
+}
+
 // ─── Detail Modal ─────────────────────────────────────────────
 function openDetailModal(id){
   const t = tasks.find(x=>x.id===id);
   if(!t) return;
   const ds = dlState(t.deadline), dl = dlLabel(t.deadline, t.deadlineTime);
   const tagsH = (t.tags||[]).map(g=>`<span class="t-tag">${esc(g)}</span>`).join('');
+  const meta = getTaskMeta(t.id);
+  const statusUpdated = fmtDateTime(meta.statusUpdatedAt);
+  const activeCommentAuthor = members.includes(commentAuthor) ? commentAuthor : '';
+  const authorPickerHtml = members.length
+    ? `<div class="comment-author-panel">
+        <div class="comment-author-label">작성자</div>
+        <div class="comment-author-chips" id="commentAuthorChips">
+          ${members.map(m=>`<button class="comment-member-chip${m===activeCommentAuthor?' on':''}" type="button" data-comment-author="${esc(m)}">
+            <span class="av-sm" style="background:${memberColor(m)}">${esc(m.slice(0,1).toUpperCase())}</span>${esc(m)}
+          </button>`).join('')}
+        </div>
+      </div>`
+    : `<div style="font-size:12px;color:var(--text3)">팀원 관리에서 팀원을 먼저 추가하세요</div>`;
+  const commentsHtml = meta.comments.length
+    ? meta.comments.map(c=>`
+      <div class="comment-item">
+        <div class="comment-body">
+          <div class="comment-meta">
+            <span class="comment-author">${esc(c.author || '작성자 미상')}</span>
+            <span class="comment-time">${fmtDateTime(c.createdAt)}</span>
+          </div>
+          <div class="comment-text">${esc(c.text)}</div>
+        </div>
+        <button class="comment-del" data-comment-id="${c.id}">×</button>
+      </div>`).join('')
+    : `<div style="font-size:12px;color:var(--text3);padding:4px 0">아직 댓글이 없습니다.</div>`;
   const rows = [
     ['우선순위', `<span class="pri ${t.priority}" style="display:inline-flex"><span class="dot"></span>${PLBL[t.priority]}</span>`],
-    t.date     ? ['업무 날짜', fmtFull(t.date) + (t.dateTime && t.dateTime!=='00:00' ? ' '+t.dateTime : '')] : null,
     t.deadline ? ['마감일',    `<span class="dl ${ds}">${dl}</span>`] : null,
-    t.assignee ? ['담당자',    `<span class="asgn"><span class="av">${esc(t.assignee.slice(0,1).toUpperCase())}</span>${esc(t.assignee)}</span>`] : null,
+    statusUpdated ? ['상태 변경', statusUpdated] : null,
+    (t.assignees||[]).length ? ['담당자', `<div style="display:flex;flex-wrap:wrap;gap:5px">${(t.assignees||[]).map(m=>`<span class="asgn"><span class="av" style="background:${memberColor(m)}">${esc(m.slice(0,1).toUpperCase())}</span>${esc(m)}</span>`).join('')}</div>`] : null,
+    t.author   ? ['작성자',    esc(t.author)] : null,
     t.collab   ? ['협업파트',  esc(t.collab)] : null,
     (t.tags||[]).length ? ['태그', tagsH] : null,
   ].filter(Boolean);
@@ -988,7 +1164,19 @@ function openDetailModal(id){
       <div class="detail-title${t.done?' done-title':''}">${esc(t.title)}</div>
     </div>
     <div class="detail-grid">${rows.map(([l,v])=>`<div class="dg-label">${l}</div><div class="dg-val">${v}</div>`).join('')}</div>
-    ${t.note?`<div class="detail-memo"><div class="detail-memo-label">메모</div><div class="detail-memo-text">${esc(t.note)}</div></div>`:''}`;
+    ${t.note?`<div class="detail-memo"><div class="detail-memo-label">메모</div><div class="detail-memo-text">${esc(t.note)}</div></div>`:''}
+    <div class="comments-box">
+      <div class="comments-head"><div class="comments-title">댓글</div><div style="font-size:11px;color:var(--text3)">${meta.comments.length}개</div></div>
+      <div class="comment-list">${commentsHtml}</div>
+      <div class="comment-form">
+        ${authorPickerHtml}
+        <input type="hidden" id="commentAuthorInput" value="${esc(activeCommentAuthor)}">
+        <div class="comment-add-row">
+          <textarea class="fi" id="commentInput" placeholder="댓글 또는 코멘트를 입력하세요" rows="2"></textarea>
+          <button class="btn-tag" id="commentAddBtn">추가</button>
+        </div>
+      </div>
+    </div>`;
 
   document.getElementById('detailFoot').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
@@ -1004,7 +1192,76 @@ function openDetailModal(id){
   document.getElementById('detailDoneBtn').addEventListener('click',()=>{
     toggle(t.id); closeOvr('detailOverlay');
   });
+  document.getElementById('commentAddBtn').addEventListener('click',()=>addComment(t.id));
+  document.getElementById('commentInput').addEventListener('keydown', e=>{
+    if((e.ctrlKey||e.metaKey) && e.key==='Enter') addComment(t.id);
+  });
+  setupCommentAuthorPicker(t.id);
+  document.querySelectorAll('.comment-del').forEach(btn=>{
+    btn.addEventListener('click',()=>deleteComment(t.id, btn.dataset.commentId));
+  });
   openOvr('detailOverlay');
+}
+
+function setCommentAuthor(name){
+  if(!members.includes(name)) return;
+  commentAuthor = name;
+  localStorage.setItem(COMMENT_AUTHOR_KEY, commentAuthor);
+  const hidden = document.getElementById('commentAuthorInput');
+  if(hidden) hidden.value = name;
+  document.getElementById('commentAuthorChips')?.classList.remove('need-selection');
+  document.querySelectorAll('.comment-member-chip').forEach(chip=>{
+    chip.classList.toggle('on', chip.dataset.commentAuthor===name);
+  });
+}
+function setupCommentAuthorPicker(taskId){
+  document.querySelectorAll('.comment-member-chip').forEach(chip=>{
+    chip.addEventListener('click',()=>setCommentAuthor(chip.dataset.commentAuthor));
+  });
+}
+function addComment(taskId){
+  const input = document.getElementById('commentInput');
+  const authorInput = document.getElementById('commentAuthorInput');
+  const text = input.value.trim();
+  if(!text){ input.focus(); return; }
+  const author = authorInput.value.trim();
+  if(members.length && !members.includes(author)){
+    document.getElementById('commentAuthorChips')?.classList.add('need-selection');
+    return;
+  }
+  commentAuthor = author;
+  localStorage.setItem(COMMENT_AUTHOR_KEY, commentAuthor);
+  const meta = getTaskMeta(taskId);
+  meta.comments.push({ id:uid(), text, author, createdAt:new Date().toISOString() });
+  persistTaskMeta();
+  render();
+  openDetailModal(taskId);
+}
+function deleteComment(taskId, commentId){
+  const meta = getTaskMeta(taskId);
+  meta.comments = meta.comments.filter(c=>c.id!==commentId);
+  persistTaskMeta();
+  render();
+  openDetailModal(taskId);
+}
+
+function openPinModal(){
+  document.getElementById('pinText').value = '';
+  openOvr('pinOverlay');
+  setTimeout(()=>document.getElementById('pinText').focus(),160);
+}
+function savePinnedNotice(){
+  const text = document.getElementById('pinText').value.trim();
+  if(!text){ document.getElementById('pinText').focus(); return; }
+  pinnedNotices.unshift({ id:uid(), text, createdAt:new Date().toISOString() });
+  persistPinnedNotices();
+  render();
+  closeOvr('pinOverlay');
+}
+function deletePinnedNotice(id){
+  pinnedNotices = pinnedNotices.filter(n=>n.id!==id);
+  persistPinnedNotices();
+  render();
 }
 
 // ─── Event Modal ──────────────────────────────────────────────
@@ -1027,6 +1284,59 @@ function deleteEvent(id){
   _sb.from('important_events').delete().eq('id',id);
   events = events.filter(e=>e.id!==id);
   render();
+}
+
+// ─── Member color (이름 기반 결정론적 색상) ──────────────────
+function memberColor(name){
+  let h=0;
+  for(let i=0;i<name.length;i++){ h=name.charCodeAt(i)+((h<<5)-h)|0; }
+  return `hsl(${Math.abs(h)%360},55%,42%)`;
+}
+
+// ─── Assignee multi-select ────────────────────────────────────
+function renderAsgnSel(){
+  const el = document.getElementById('asgnSel');
+  if(!members.length){
+    el.innerHTML='<span class="asgn-empty">팀원 관리에서 팀원을 먼저 추가하세요</span>'; return;
+  }
+  el.innerHTML = members.map(m=>{
+    const on = selAssignees.includes(m);
+    const col = memberColor(m);
+    return `<button class="asgn-opt${on?' on':''}" data-member="${esc(m)}" style="${on?`background:${col};border-color:${col}`:''}">
+      <span class="av-sm" style="background:${col}">${esc(m.slice(0,1).toUpperCase())}</span>${esc(m)}
+    </button>`;
+  }).join('');
+  el.querySelectorAll('.asgn-opt').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const m=btn.dataset.member;
+      if(selAssignees.includes(m)) selAssignees=selAssignees.filter(x=>x!==m);
+      else selAssignees.push(m);
+      renderAsgnSel();
+    });
+  });
+}
+
+// ─── Members modal ────────────────────────────────────────────
+function renderMemberMgrList(){
+  const el = document.getElementById('memberMgrList');
+  if(!members.length){ el.innerHTML='<span style="font-size:12px;color:var(--text3)">등록된 팀원 없음</span>'; return; }
+  el.innerHTML = members.map((m,i)=>`<div class="tmgr-item">${esc(m)}<button class="tmgr-del" data-midx="${i}">✕</button></div>`).join('');
+  el.querySelectorAll('.tmgr-del').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const removed = members.splice(+btn.dataset.midx, 1)[0];
+      if(commentAuthor===removed){
+        commentAuthor = '';
+        localStorage.removeItem(COMMENT_AUTHOR_KEY);
+      }
+      persistMembers(); renderMemberMgrList();
+    });
+  });
+}
+function addMember(){
+  const val = document.getElementById('newMemberInput').value.trim();
+  if(!val || members.includes(val)) return;
+  members.push(val); persistMembers();
+  document.getElementById('newMemberInput').value=''; renderMemberMgrList();
 }
 
 // ─── Tag selector ─────────────────────────────────────────────
@@ -1068,7 +1378,13 @@ function addTag(){
 // ─── Delete confirm ───────────────────────────────────────────
 function openConfirm(id){ delId=id; openOvr('confirmOverlay'); }
 function doDelete(){
-  if(delId){ _sb.from('tasks').delete().eq('id',delId); tasks=tasks.filter(x=>x.id!==delId); render(); }
+  if(delId){
+    _sb.from('tasks').delete().eq('id',delId);
+    tasks=tasks.filter(x=>x.id!==delId);
+    delete taskMeta[delId];
+    persistTaskMeta();
+    render();
+  }
   closeOvr('confirmOverlay'); closeOvr('detailOverlay');
 }
 
@@ -1076,14 +1392,13 @@ function doDelete(){
 function openOvr(id) { document.getElementById(id).classList.add('open') }
 function closeOvr(id){ document.getElementById(id).classList.remove('open') }
 
-['taskOverlay','detailOverlay','evOverlay','tagOverlay','confirmOverlay'].forEach(id=>{
-  document.getElementById(id).addEventListener('click', function(e){
-    if(e.target===this){ if(id==='tagOverlay') renderTagSel(); closeOvr(id); }
-  });
-});
-
 // ─── Button wiring ────────────────────────────────────────────
 document.getElementById('addBtn').addEventListener('click',   ()=>openTaskModal());
+document.getElementById('membersBtn').addEventListener('click', ()=>{ renderMemberMgrList(); document.getElementById('newMemberInput').value=''; openOvr('membersOverlay'); setTimeout(()=>document.getElementById('newMemberInput').focus(),160); });
+document.getElementById('membersClose').addEventListener('click', ()=>closeOvr('membersOverlay'));
+document.getElementById('membersDone').addEventListener('click',  ()=>closeOvr('membersOverlay'));
+document.getElementById('doAddMember').addEventListener('click',  addMember);
+document.getElementById('newMemberInput').addEventListener('keydown', e=>{ if(e.key==='Enter') addMember(); });
 document.getElementById('sbEvBtn').addEventListener('click',  ()=>openEvModal(sel!=='all'&&sel!=='nodate'?sel:todayStr()));
 document.getElementById('taskClose').addEventListener('click', ()=>closeOvr('taskOverlay'));
 document.getElementById('taskCancel').addEventListener('click',()=>closeOvr('taskOverlay'));
@@ -1093,6 +1408,10 @@ document.getElementById('evClose').addEventListener('click',  ()=>closeOvr('evOv
 document.getElementById('evCancel').addEventListener('click', ()=>closeOvr('evOverlay'));
 document.getElementById('evSave').addEventListener('click',   saveEvent);
 document.getElementById('evTitle').addEventListener('keydown', e=>{ if(e.key==='Enter') saveEvent(); });
+document.getElementById('pinClose').addEventListener('click',  ()=>closeOvr('pinOverlay'));
+document.getElementById('pinCancel').addEventListener('click', ()=>closeOvr('pinOverlay'));
+document.getElementById('pinSave').addEventListener('click',   savePinnedNotice);
+document.getElementById('pinText').addEventListener('keydown', e=>{ if((e.ctrlKey||e.metaKey)&&e.key==='Enter') savePinnedNotice(); });
 document.getElementById('tagClose').addEventListener('click', ()=>{ renderTagSel(); closeOvr('tagOverlay'); });
 document.getElementById('tagDone').addEventListener('click',  ()=>{ renderTagSel(); closeOvr('tagOverlay'); });
 document.getElementById('doAddTag').addEventListener('click', addTag);
@@ -1105,7 +1424,7 @@ document.getElementById('confirmOk').addEventListener('click', doDelete);
 document.addEventListener('keydown', e=>{
   const inInput = ['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName);
   if(e.key==='Escape'){
-    const order = ['confirmOverlay','tagOverlay','detailOverlay','evOverlay','taskOverlay'];
+    const order = ['confirmOverlay','tagOverlay','membersOverlay','pinOverlay','detailOverlay','evOverlay','taskOverlay'];
     for(const id of order){ if(document.getElementById(id).classList.contains('open')){ if(id==='tagOverlay') renderTagSel(); closeOvr(id); return; } }
   }
   if(e.key==='n'&&!inInput&&!document.querySelector('.overlay.open')) openTaskModal();
