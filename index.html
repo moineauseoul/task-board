@@ -1648,21 +1648,59 @@ async function saveMyName(){
   myName=pendingMyName;
   localStorage.setItem('bd_my_name', myName);
   closeOvr('myNameOverlay');
-  if('Notification' in window && Notification.permission==='default') await Notification.requestPermission();
+  console.log('[알림] 이름 설정됨:', myName);
+  if(!('Notification' in window)){
+    console.warn('[알림] 이 브라우저는 Notification API를 지원하지 않습니다');
+  } else if(Notification.permission==='default'){
+    console.log('[알림] 권한 요청 중...');
+    const perm = await Notification.requestPermission();
+    console.log('[알림] 권한 결과:', perm);
+  } else {
+    console.log('[알림] 기존 권한 상태:', Notification.permission);
+  }
   setupRealtimeNotifications();
 }
 function setupRealtimeNotifications(){
-  if(!myName || realtimeChannel) return;
+  if(!myName){
+    console.log('[Realtime] 건너뜀: 내 이름 미설정');
+    return;
+  }
+  if(realtimeChannel){
+    console.log('[Realtime] 이미 구독 중 (이름:', myName, ')');
+    return;
+  }
+  console.log('[Realtime] 구독 시작 — 이름:', myName);
+  console.log('[Realtime] 알림 권한:', 'Notification' in window ? Notification.permission : '미지원');
   realtimeChannel = _sb.channel('tasks-notify')
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'tasks'},payload=>{
+      console.log('[Realtime] INSERT 수신 — raw payload:', payload);
       const task = rowToTask(payload.new);
-      if((task.assignees||[]).includes(myName)) showTaskNotification(task);
+      console.log('[Realtime] 파싱된 업무 — title:', task.title, '/ assignees:', task.assignees);
+      const matched = (task.assignees||[]).includes(myName);
+      console.log('[Realtime] 내 이름('+myName+') 담당자 포함 여부:', matched);
+      if(matched) showTaskNotification(task);
     })
-    .subscribe();
+    .subscribe((status, err)=>{
+      if(err) console.error('[Realtime] 구독 오류:', err);
+      console.log('[Realtime] 구독 상태:', status);
+      if(status==='SUBSCRIBED')     console.log('[Realtime] ✅ 연결 성공');
+      if(status==='CHANNEL_ERROR')  console.error('[Realtime] ❌ 채널 오류 — Supabase 대시보드에서 Realtime이 tasks 테이블에 활성화되어 있는지 확인하세요');
+      if(status==='TIMED_OUT')      console.warn('[Realtime] ⏱ 구독 타임아웃');
+      if(status==='CLOSED')         console.warn('[Realtime] 🔌 채널 닫힘');
+    });
 }
 function showTaskNotification(task){
-  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  if(!('Notification' in window)){
+    console.warn('[알림] Notification API 미지원 브라우저');
+    return;
+  }
+  console.log('[알림] 권한 상태:', Notification.permission);
+  if(Notification.permission!=='granted'){
+    console.warn('[알림] 권한 없음 — 현재 상태:', Notification.permission, '/ 브라우저 설정에서 알림을 허용해주세요');
+    return;
+  }
   const body = task.author ? `작성자: ${task.author}` : '새 업무가 배정되었습니다';
+  console.log('[알림] 표시 — 제목:', task.title, '/ 본문:', body);
   new Notification(`📋 ${task.title}`, {body, tag:task.id});
 }
 
@@ -1713,6 +1751,8 @@ document.addEventListener('keydown', e=>{
 // ─── Init ─────────────────────────────────────────────────────
 loadData().then(()=>{
   render();
+  console.log('[초기화] 내 이름(bd_my_name):', myName || '(미설정)');
+  console.log('[초기화] 알림 권한:', 'Notification' in window ? Notification.permission : '미지원');
   if(!myName && members.length){ renderMyNameSel(); openOvr('myNameOverlay'); }
   setupRealtimeNotifications();
 }).catch(err=>{ console.error('init error:',err); render(); });
