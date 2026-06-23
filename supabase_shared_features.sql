@@ -1,11 +1,16 @@
 -- Run this once in Supabase SQL Editor for the task-board project.
--- These tables store shared team members, task comments, status update times,
--- and pinned weekly notices for the public team board.
+-- These tables store shared project tags, team members, task comments,
+-- status update times, and pinned weekly notices for the public team board.
 
 alter table public.tasks
   add column if not exists author text;
 
 create table if not exists public.members (
+  name text primary key,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.project_tags (
   name text primary key,
   created_at timestamptz not null default now()
 );
@@ -33,6 +38,7 @@ create table if not exists public.pinned_notices (
 );
 
 alter table public.members enable row level security;
+alter table public.project_tags enable row level security;
 alter table public.task_meta enable row level security;
 alter table public.task_comments enable row level security;
 alter table public.pinned_notices enable row level security;
@@ -45,6 +51,15 @@ create policy "public read members" on public.members for select using (true);
 create policy "public insert members" on public.members for insert with check (true);
 create policy "public update members" on public.members for update using (true) with check (true);
 create policy "public delete members" on public.members for delete using (true);
+
+drop policy if exists "public read project_tags" on public.project_tags;
+drop policy if exists "public insert project_tags" on public.project_tags;
+drop policy if exists "public update project_tags" on public.project_tags;
+drop policy if exists "public delete project_tags" on public.project_tags;
+create policy "public read project_tags" on public.project_tags for select using (true);
+create policy "public insert project_tags" on public.project_tags for insert with check (true);
+create policy "public update project_tags" on public.project_tags for update using (true) with check (true);
+create policy "public delete project_tags" on public.project_tags for delete using (true);
 
 drop policy if exists "public read task_meta" on public.task_meta;
 drop policy if exists "public insert task_meta" on public.task_meta;

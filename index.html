@@ -466,7 +466,7 @@ let editId=null, delId=null, selTags=[], selAssignees=[], dragId=null;
 // tasks 테이블 컬럼: id, title, date, date_time, deadline, deadline_time,
 //   priority, assignee, author, collab, note, tags(text[]), done
 // important_events 테이블 컬럼: id, date, title
-// members(name), task_meta(task_id, status_updated_at),
+// project_tags(name), members(name), task_meta(task_id, status_updated_at),
 // task_comments(id, task_id, author, text, created_at), pinned_notices(id, text, created_at)
 const _sb = window.supabase.createClient(
   'https://rkuicfxxtjhcmymqzenm.supabase.co',
@@ -488,12 +488,14 @@ function rowToTask(r){
     collab:r.collab||'', note:r.note||'', tags:Array.isArray(r.tags)?r.tags:[], done:!!r.done };
 }
 async function loadData(){
+  const localTags = [...tags];
   const localMembers = [...members];
   const localTaskMeta = JSON.parse(JSON.stringify(taskMeta || {}));
   const localPinnedNotices = [...pinnedNotices];
-  const [tr, er, mr, sr, cr, pr] = await Promise.all([
+  const [tr, er, gr, mr, sr, cr, pr] = await Promise.all([
     _sb.from('tasks').select('*'),
     _sb.from('important_events').select('*'),
+    _sb.from('project_tags').select('*').order('name'),
     _sb.from('members').select('*').order('name'),
     _sb.from('task_meta').select('*'),
     _sb.from('task_comments').select('*').order('created_at'),
@@ -503,6 +505,15 @@ async function loadData(){
   if(er.error) console.error('events load:', er.error);
   tasks  = (tr.data||[]).map(rowToTask);
   events = (er.data||[]).map(r=>({id:r.id, date:r.date, title:r.title}));
+
+  if(!gr.error){
+    const remoteTags = (gr.data||[]).map(r=>r.name).filter(Boolean);
+    tags = [...new Set([...remoteTags, ...localTags])];
+    persistTags();
+    localTags.filter(name=>name && !remoteTags.includes(name)).forEach(name=>saveTagRemote(name));
+  } else {
+    console.error('project_tags load:', gr.error);
+  }
 
   if(!mr.error){
     const remoteMembers = (mr.data||[]).map(r=>r.name).filter(Boolean);
@@ -567,6 +578,12 @@ function getTaskMeta(id){
   return taskMeta[id];
 }
 function logSupaError(label, error){ if(error) console.error(label, error); }
+function saveTagRemote(name){
+  _sb.from('project_tags').upsert({name}).then(({error})=>logSupaError('project_tags save:', error));
+}
+function deleteTagRemote(name){
+  _sb.from('project_tags').delete().eq('name', name).then(({error})=>logSupaError('project_tags delete:', error));
+}
 function saveMemberRemote(name){
   _sb.from('members').upsert({name}).then(({error})=>logSupaError('members save:', error));
 }
@@ -1467,6 +1484,7 @@ function renderTagMgrList(){
   el.querySelectorAll('.tmgr-del').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const removed=tags[+btn.dataset.idx]; tags.splice(+btn.dataset.idx,1);
+      deleteTagRemote(removed);
       selTags=selTags.filter(x=>x!==removed); persistTags(); renderTagMgrList();
     });
   });
@@ -1474,7 +1492,7 @@ function renderTagMgrList(){
 function addTag(){
   const val = document.getElementById('newTagInput').value.trim();
   if(!val||tags.includes(val)) return;
-  tags.push(val); persistTags(); document.getElementById('newTagInput').value=''; renderTagMgrList();
+  tags.push(val); persistTags(); saveTagRemote(val); document.getElementById('newTagInput').value=''; renderTagMgrList();
 }
 
 // ─── Delete confirm ───────────────────────────────────────────
