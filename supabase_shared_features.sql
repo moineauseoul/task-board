@@ -3,7 +3,15 @@
 -- status update times, and pinned weekly notices for the public team board.
 
 alter table public.tasks
-  add column if not exists author text;
+  add column if not exists date_time text,
+  add column if not exists deadline date,
+  add column if not exists deadline_time text,
+  add column if not exists assignee text,
+  add column if not exists author text,
+  add column if not exists collab text,
+  add column if not exists note text,
+  add column if not exists tags text[] not null default '{}',
+  add column if not exists done boolean not null default false;
 
 create table if not exists public.members (
   name text primary key,

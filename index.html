@@ -1197,9 +1197,10 @@ async function saveTask(){
   }
   const deadlineRaw = document.getElementById('fDeadline').value;
   const deadlineParts = deadlineRaw ? deadlineRaw.split('T') : [];
+  const fallbackDate = deadlineParts[0] || todayStr();
   const data = {
     title,
-    date:         deadlineParts[0] || '',
+    date:         fallbackDate,
     dateTime:     deadlineParts[1] || '',
     deadline:     deadlineParts[0] || '',
     deadlineTime: deadlineParts[1] || '',
