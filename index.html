@@ -6,6 +6,7 @@
 <title>업무 보드</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -365,9 +366,9 @@ const DOWF = ['일요일','월요일','화요일','수요일','목요일','금�
 const PLBL = {high:'높음',medium:'보통',low:'낮음'};
 
 // ─── State ────────────────────────────────────────────────────
-let tasks   = load('bd_tasks',  []);
-let tags    = load('bd_tags',   ['26SS','SNS','패키지','입점사']);
-let events  = load('bd_events', []);
+let tasks   = [];
+let tags    = (()=>{ try{ return JSON.parse(localStorage.getItem('bd_tags'))||['26SS','SNS','패키지','입점사']; }catch{ return ['26SS','SNS','패키지','입점사']; } })();
+let events  = [];
 let sel   = todayStr();   // selected date / 'all' / 'nodate'
 let pview = 'week';       // 'list' | 'week' | 'month'
 // ── Navigation state: completely independent, ±1 unit only ──
@@ -377,12 +378,37 @@ let moYear  = (()=>{ const d=new Date(); return {y:d.getFullYear(), m:d.getMonth
 let weekOpen = [true, false, false, false];
 let editId=null, delId=null, selTags=[], dragId=null;
 
-function load(k,d){ try{return JSON.parse(localStorage.getItem(k))||d}catch{return d} }
-function persist(){
-  localStorage.setItem('bd_tasks',  JSON.stringify(tasks));
-  localStorage.setItem('bd_tags',   JSON.stringify(tags));
-  localStorage.setItem('bd_events', JSON.stringify(events));
+// ─── Supabase ─────────────────────────────────────────────────
+// tasks 테이블 컬럼: id, title, date, date_time, deadline, deadline_time,
+//   priority, assignee, collab, note, tags(text[]), done
+// important_events 테이블 컬럼: id, date, title
+const _sb = window.supabase.createClient(
+  'https://rkuicfxxtjhcmymqzenm.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrdWljZnh4dGpoY215bXF6ZW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTkxOTcsImV4cCI6MjA5NzczNTE5N30.08Yj4UfkJPri-yhdzyYstDMBwKxXqoHqP6t11p3Dde0'
+);
+function taskToRow(t){
+  return { id:t.id, title:t.title, date:t.date||null, date_time:t.dateTime||null,
+    deadline:t.deadline||null, deadline_time:t.deadlineTime||null,
+    priority:t.priority, assignee:t.assignee||null, collab:t.collab||null,
+    note:t.note||null, tags:t.tags||[], done:t.done };
 }
+function rowToTask(r){
+  return { id:r.id, title:r.title, date:r.date||'', dateTime:r.date_time||'',
+    deadline:r.deadline||'', deadlineTime:r.deadline_time||'',
+    priority:r.priority||'medium', assignee:r.assignee||'', collab:r.collab||'',
+    note:r.note||'', tags:Array.isArray(r.tags)?r.tags:[], done:!!r.done };
+}
+async function loadData(){
+  const [tr, er] = await Promise.all([
+    _sb.from('tasks').select('*'),
+    _sb.from('important_events').select('*'),
+  ]);
+  if(tr.error) console.error('tasks load:', tr.error);
+  if(er.error) console.error('events load:', er.error);
+  tasks  = (tr.data||[]).map(rowToTask);
+  events = (er.data||[]).map(r=>({id:r.id, date:r.date, title:r.title}));
+}
+function persistTags(){ localStorage.setItem('bd_tags', JSON.stringify(tags)); }
 
 // ─── Date utils ───────────────────────────────────────────────
 // fmt: 로컬 시간 기준 YYYY-MM-DD 포맷 (toISOString은 UTC 기준이라 KST 등에서 날짜 어긋남)
@@ -842,7 +868,7 @@ document.addEventListener('click', e=>{
 // ─── Toggle done ──────────────────────────────────────────────
 function toggle(id){
   const t = tasks.find(x=>x.id===id);
-  if(t){ t.done=!t.done; persist(); render(); }
+  if(t){ t.done=!t.done; _sb.from('tasks').update({done:t.done}).eq('id',id); render(); }
 }
 
 // ─── Drag & Drop ──────────────────────────────────────────────
@@ -882,7 +908,7 @@ function setupDnD(){
       e.preventDefault(); el.classList.remove('drag-over');
       const id = e.dataTransfer.getData('text/plain');
       const task = tasks.find(x=>x.id===id);
-      if(task){ task.date=dateKey; persist(); render(); }
+      if(task){ task.date=dateKey; _sb.from('tasks').update({date:task.date}).eq('id',task.id); render(); }
     });
   });
 }
@@ -929,9 +955,15 @@ function saveTask(){
     note:     document.getElementById('fNote').value.trim(),
     tags:     [...selTags],
   };
-  if(editId){ const i=tasks.findIndex(x=>x.id===editId); if(i!==-1) tasks[i]={...tasks[i],...data}; }
-  else tasks.unshift({id:uid(), done:false, createdAt:Date.now(), ...data});
-  persist(); render(); closeOvr('taskOverlay');
+  if(editId){
+    const i=tasks.findIndex(x=>x.id===editId);
+    if(i!==-1){ tasks[i]={...tasks[i],...data}; _sb.from('tasks').update(taskToRow(tasks[i])).eq('id',editId); }
+  } else {
+    const t={id:uid(),done:false,...data};
+    tasks.unshift(t);
+    _sb.from('tasks').insert(taskToRow(t));
+  }
+  render(); closeOvr('taskOverlay');
 }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7) }
 
@@ -986,12 +1018,15 @@ function saveEvent(){
   const date  = document.getElementById('evDate').value;
   const title = document.getElementById('evTitle').value.trim();
   if(!date||!title){ document.getElementById('evTitle').focus(); return; }
-  events.push({id:uid(), date, title});
-  persist(); render(); closeOvr('evOverlay');
+  const ev={id:uid(), date, title};
+  events.push(ev);
+  _sb.from('important_events').insert(ev);
+  render(); closeOvr('evOverlay');
 }
 function deleteEvent(id){
+  _sb.from('important_events').delete().eq('id',id);
   events = events.filter(e=>e.id!==id);
-  persist(); render();
+  render();
 }
 
 // ─── Tag selector ─────────────────────────────────────────────
@@ -1020,20 +1055,20 @@ function renderTagMgrList(){
   el.querySelectorAll('.tmgr-del').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const removed=tags[+btn.dataset.idx]; tags.splice(+btn.dataset.idx,1);
-      selTags=selTags.filter(x=>x!==removed); persist(); renderTagMgrList();
+      selTags=selTags.filter(x=>x!==removed); persistTags(); renderTagMgrList();
     });
   });
 }
 function addTag(){
   const val = document.getElementById('newTagInput').value.trim();
   if(!val||tags.includes(val)) return;
-  tags.push(val); persist(); document.getElementById('newTagInput').value=''; renderTagMgrList();
+  tags.push(val); persistTags(); document.getElementById('newTagInput').value=''; renderTagMgrList();
 }
 
 // ─── Delete confirm ───────────────────────────────────────────
 function openConfirm(id){ delId=id; openOvr('confirmOverlay'); }
 function doDelete(){
-  if(delId){ tasks=tasks.filter(x=>x.id!==delId); persist(); render(); }
+  if(delId){ _sb.from('tasks').delete().eq('id',delId); tasks=tasks.filter(x=>x.id!==delId); render(); }
   closeOvr('confirmOverlay'); closeOvr('detailOverlay');
 }
 
@@ -1077,7 +1112,7 @@ document.addEventListener('keydown', e=>{
 });
 
 // ─── Init ─────────────────────────────────────────────────────
-render();
+loadData().then(()=>render()).catch(err=>{ console.error('init error:',err); render(); });
 </script>
 </body>
 </html>
