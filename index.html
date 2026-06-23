@@ -505,6 +505,7 @@ async function loadData(){
   if(er.error) console.error('events load:', er.error);
   tasks  = (tr.data||[]).map(rowToTask);
   events = (er.data||[]).map(r=>({id:r.id, date:r.date, title:r.title}));
+  const validTaskIds = new Set(tasks.map(t=>t.id));
 
   if(!gr.error){
     const remoteTags = (gr.data||[]).map(r=>r.name).filter(Boolean);
@@ -534,6 +535,7 @@ async function loadData(){
       meta.comments.push({ id:r.id, text:r.text||'', author:r.author||'', createdAt:r.created_at||'' });
     });
     Object.entries(localTaskMeta||{}).forEach(([taskId, meta])=>{
+      if(!validTaskIds.has(taskId)) return;
       const target = nextMeta[taskId] || (nextMeta[taskId] = { statusUpdatedAt:'', comments:[] });
       if(!target.statusUpdatedAt && meta.statusUpdatedAt){
         target.statusUpdatedAt = meta.statusUpdatedAt;
@@ -578,6 +580,9 @@ function getTaskMeta(id){
   return taskMeta[id];
 }
 function logSupaError(label, error){ if(error) console.error(label, error); }
+function isUuid(id){
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id || '');
+}
 function saveTagRemote(name){
   _sb.from('project_tags').upsert({name}).then(({error})=>logSupaError('project_tags save:', error));
 }
@@ -591,9 +596,11 @@ function deleteMemberRemote(name){
   _sb.from('members').delete().eq('name', name).then(({error})=>logSupaError('members delete:', error));
 }
 function saveTaskStatusRemote(taskId, statusUpdatedAt){
+  if(!isUuid(taskId)) return;
   _sb.from('task_meta').upsert({task_id:taskId, status_updated_at:statusUpdatedAt}).then(({error})=>logSupaError('task_meta save:', error));
 }
 function saveCommentRemote(taskId, comment){
+  if(!isUuid(taskId)) return;
   _sb.from('task_comments').upsert({
     id:comment.id,
     task_id:taskId,
@@ -1208,7 +1215,12 @@ function saveTask(){
   }
   render(); closeOvr('taskOverlay');
 }
-function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7) }
+function uid(){
+  if(window.crypto?.randomUUID) return window.crypto.randomUUID();
+  return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c =>
+    (c ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  );
+}
 
 function copyTask(id){
   const src = tasks.find(x=>x.id===id);
