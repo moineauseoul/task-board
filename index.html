@@ -466,6 +466,8 @@ let editId=null, delId=null, selTags=[], selAssignees=[], dragId=null;
 // tasks 테이블 컬럼: id, title, date, date_time, deadline, deadline_time,
 //   priority, assignee, author, collab, note, tags(text[]), done
 // important_events 테이블 컬럼: id, date, title
+// members(name), task_meta(task_id, status_updated_at),
+// task_comments(id, task_id, author, text, created_at), pinned_notices(id, text, created_at)
 const _sb = window.supabase.createClient(
   'https://rkuicfxxtjhcmymqzenm.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrdWljZnh4dGpoY215bXF6ZW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNTkxOTcsImV4cCI6MjA5NzczNTE5N30.08Yj4UfkJPri-yhdzyYstDMBwKxXqoHqP6t11p3Dde0'
@@ -486,14 +488,74 @@ function rowToTask(r){
     collab:r.collab||'', note:r.note||'', tags:Array.isArray(r.tags)?r.tags:[], done:!!r.done };
 }
 async function loadData(){
-  const [tr, er] = await Promise.all([
+  const localMembers = [...members];
+  const localTaskMeta = JSON.parse(JSON.stringify(taskMeta || {}));
+  const localPinnedNotices = [...pinnedNotices];
+  const [tr, er, mr, sr, cr, pr] = await Promise.all([
     _sb.from('tasks').select('*'),
     _sb.from('important_events').select('*'),
+    _sb.from('members').select('*').order('name'),
+    _sb.from('task_meta').select('*'),
+    _sb.from('task_comments').select('*').order('created_at'),
+    _sb.from('pinned_notices').select('*').order('created_at', { ascending:false }),
   ]);
   if(tr.error) console.error('tasks load:', tr.error);
   if(er.error) console.error('events load:', er.error);
   tasks  = (tr.data||[]).map(rowToTask);
   events = (er.data||[]).map(r=>({id:r.id, date:r.date, title:r.title}));
+
+  if(!mr.error){
+    const remoteMembers = (mr.data||[]).map(r=>r.name).filter(Boolean);
+    members = [...new Set([...remoteMembers, ...localMembers])];
+    localStorage.setItem('bd_members', JSON.stringify(members));
+    localMembers.filter(name=>name && !remoteMembers.includes(name)).forEach(name=>saveMemberRemote(name));
+  } else {
+    console.error('members load:', mr.error);
+  }
+
+  if(!sr.error && !cr.error){
+    const nextMeta = {};
+    (sr.data||[]).forEach(r=>{
+      nextMeta[r.task_id] = { statusUpdatedAt:r.status_updated_at||'', comments:[] };
+    });
+    (cr.data||[]).forEach(r=>{
+      const meta = nextMeta[r.task_id] || (nextMeta[r.task_id] = { statusUpdatedAt:'', comments:[] });
+      meta.comments.push({ id:r.id, text:r.text||'', author:r.author||'', createdAt:r.created_at||'' });
+    });
+    Object.entries(localTaskMeta||{}).forEach(([taskId, meta])=>{
+      const target = nextMeta[taskId] || (nextMeta[taskId] = { statusUpdatedAt:'', comments:[] });
+      if(!target.statusUpdatedAt && meta.statusUpdatedAt){
+        target.statusUpdatedAt = meta.statusUpdatedAt;
+        saveTaskStatusRemote(taskId, meta.statusUpdatedAt);
+      }
+      (meta.comments||[]).forEach(c=>{
+        if(!target.comments.some(x=>x.id===c.id)){
+          target.comments.push(c);
+          saveCommentRemote(taskId, c);
+        }
+      });
+    });
+    taskMeta = nextMeta;
+    persistTaskMeta();
+  } else {
+    if(sr.error) console.error('task_meta load:', sr.error);
+    if(cr.error) console.error('task_comments load:', cr.error);
+  }
+
+  if(!pr.error){
+    const remotePins = (pr.data||[]).map(r=>({id:r.id, text:r.text||'', createdAt:r.created_at||''}));
+    const pinMap = new Map(remotePins.map(p=>[p.id,p]));
+    localPinnedNotices.forEach(p=>{
+      if(!pinMap.has(p.id)){
+        pinMap.set(p.id,p);
+        savePinnedNoticeRemote(p);
+      }
+    });
+    pinnedNotices = [...pinMap.values()].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+    persistPinnedNotices();
+  } else {
+    console.error('pinned_notices load:', pr.error);
+  }
 }
 function persistTags(){ localStorage.setItem('bd_tags', JSON.stringify(tags)); }
 function persistMembers(){ localStorage.setItem('bd_members', JSON.stringify(members)); }
@@ -503,6 +565,38 @@ function getTaskMeta(id){
   if(!taskMeta[id]) taskMeta[id] = { statusUpdatedAt:'', comments:[] };
   taskMeta[id].comments = taskMeta[id].comments || [];
   return taskMeta[id];
+}
+function logSupaError(label, error){ if(error) console.error(label, error); }
+function saveMemberRemote(name){
+  _sb.from('members').upsert({name}).then(({error})=>logSupaError('members save:', error));
+}
+function deleteMemberRemote(name){
+  _sb.from('members').delete().eq('name', name).then(({error})=>logSupaError('members delete:', error));
+}
+function saveTaskStatusRemote(taskId, statusUpdatedAt){
+  _sb.from('task_meta').upsert({task_id:taskId, status_updated_at:statusUpdatedAt}).then(({error})=>logSupaError('task_meta save:', error));
+}
+function saveCommentRemote(taskId, comment){
+  _sb.from('task_comments').upsert({
+    id:comment.id,
+    task_id:taskId,
+    author:comment.author||null,
+    text:comment.text||'',
+    created_at:comment.createdAt||new Date().toISOString(),
+  }).then(({error})=>logSupaError('comment save:', error));
+}
+function deleteCommentRemote(commentId){
+  _sb.from('task_comments').delete().eq('id', commentId).then(({error})=>logSupaError('comment delete:', error));
+}
+function savePinnedNoticeRemote(notice){
+  _sb.from('pinned_notices').upsert({
+    id:notice.id,
+    text:notice.text||'',
+    created_at:notice.createdAt||new Date().toISOString(),
+  }).then(({error})=>logSupaError('pinned notice save:', error));
+}
+function deletePinnedNoticeRemote(id){
+  _sb.from('pinned_notices').delete().eq('id', id).then(({error})=>logSupaError('pinned notice delete:', error));
 }
 
 // ─── Date utils ───────────────────────────────────────────────
@@ -997,6 +1091,7 @@ function toggle(id){
     const meta = getTaskMeta(id);
     meta.statusUpdatedAt = new Date().toISOString();
     persistTaskMeta();
+    saveTaskStatusRemote(id, meta.statusUpdatedAt);
     _sb.from('tasks').update({done:t.done}).eq('id',id);
     render();
   }
@@ -1233,6 +1328,7 @@ function addComment(taskId){
   localStorage.setItem(COMMENT_AUTHOR_KEY, commentAuthor);
   const meta = getTaskMeta(taskId);
   meta.comments.push({ id:uid(), text, author, createdAt:new Date().toISOString() });
+  saveCommentRemote(taskId, meta.comments[meta.comments.length-1]);
   persistTaskMeta();
   render();
   openDetailModal(taskId);
@@ -1240,6 +1336,7 @@ function addComment(taskId){
 function deleteComment(taskId, commentId){
   const meta = getTaskMeta(taskId);
   meta.comments = meta.comments.filter(c=>c.id!==commentId);
+  deleteCommentRemote(commentId);
   persistTaskMeta();
   render();
   openDetailModal(taskId);
@@ -1253,13 +1350,16 @@ function openPinModal(){
 function savePinnedNotice(){
   const text = document.getElementById('pinText').value.trim();
   if(!text){ document.getElementById('pinText').focus(); return; }
-  pinnedNotices.unshift({ id:uid(), text, createdAt:new Date().toISOString() });
+  const notice = { id:uid(), text, createdAt:new Date().toISOString() };
+  pinnedNotices.unshift(notice);
+  savePinnedNoticeRemote(notice);
   persistPinnedNotices();
   render();
   closeOvr('pinOverlay');
 }
 function deletePinnedNotice(id){
   pinnedNotices = pinnedNotices.filter(n=>n.id!==id);
+  deletePinnedNoticeRemote(id);
   persistPinnedNotices();
   render();
 }
@@ -1328,6 +1428,7 @@ function renderMemberMgrList(){
         commentAuthor = '';
         localStorage.removeItem(COMMENT_AUTHOR_KEY);
       }
+      deleteMemberRemote(removed);
       persistMembers(); renderMemberMgrList();
     });
   });
@@ -1336,6 +1437,7 @@ function addMember(){
   const val = document.getElementById('newMemberInput').value.trim();
   if(!val || members.includes(val)) return;
   members.push(val); persistMembers();
+  saveMemberRemote(val);
   document.getElementById('newMemberInput').value=''; renderMemberMgrList();
 }
 
@@ -1382,6 +1484,8 @@ function doDelete(){
     _sb.from('tasks').delete().eq('id',delId);
     tasks=tasks.filter(x=>x.id!==delId);
     delete taskMeta[delId];
+    _sb.from('task_meta').delete().eq('task_id',delId);
+    _sb.from('task_comments').delete().eq('task_id',delId);
     persistTaskMeta();
     render();
   }
