@@ -1108,15 +1108,18 @@ document.addEventListener('click', e=>{
 });
 
 // ─── Toggle done ──────────────────────────────────────────────
-function toggle(id){
+async function toggle(id){
   const t = tasks.find(x=>x.id===id);
   if(t){
-    t.done=!t.done;
+    const nextDone = !t.done;
     const meta = getTaskMeta(id);
-    meta.statusUpdatedAt = new Date().toISOString();
+    const nextUpdatedAt = new Date().toISOString();
+    const { error } = await _sb.from('tasks').update({done:nextDone}).eq('id',id);
+    if(error){ alert('상태 변경에 실패했습니다: ' + error.message); console.error('task toggle:', error); return; }
+    t.done=nextDone;
+    meta.statusUpdatedAt = nextUpdatedAt;
     persistTaskMeta();
     saveTaskStatusRemote(id, meta.statusUpdatedAt);
-    _sb.from('tasks').update({done:t.done}).eq('id',id);
     render();
   }
 }
@@ -1328,8 +1331,9 @@ function openDetailModal(id){
       </div>
     </div>`;
 
-  document.getElementById('detailDoneBtn').addEventListener('click',()=>{
-    toggle(t.id); closeOvr('detailOverlay');
+  document.getElementById('detailDoneBtn').addEventListener('click', async ()=>{
+    await toggle(t.id);
+    closeOvr('detailOverlay');
   });
   document.getElementById('commentAddBtn').addEventListener('click',()=>addComment(t.id));
   document.getElementById('commentInput').addEventListener('keydown', e=>{
@@ -1524,9 +1528,10 @@ function addTag(){
 
 // ─── Delete confirm ───────────────────────────────────────────
 function openConfirm(id){ delId=id; openOvr('confirmOverlay'); }
-function doDelete(){
+async function doDelete(){
   if(delId){
-    _sb.from('tasks').delete().eq('id',delId);
+    const { error } = await _sb.from('tasks').delete().eq('id',delId);
+    if(error){ alert('삭제에 실패했습니다: ' + error.message); console.error('task delete:', error); return; }
     tasks=tasks.filter(x=>x.id!==delId);
     delete taskMeta[delId];
     _sb.from('task_meta').delete().eq('task_id',delId);
