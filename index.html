@@ -461,6 +461,7 @@ let moYear  = (()=>{ const d=new Date(); return {y:d.getFullYear(), m:d.getMonth
 // fix 1: which week groups are open (4 groups, 0 = current week open by default)
 let weekOpen = [true, false, false, false];
 let editId=null, delId=null, selTags=[], selAssignees=[], dragId=null;
+let memberFilter = null;
 
 // ─── Supabase ─────────────────────────────────────────────────
 // tasks 테이블 컬럼: id, title, date, date_time, deadline, deadline_time,
@@ -703,7 +704,7 @@ function isOverdue(task){
 }
 
 // ─── Filtering ────────────────────────────────────────────────
-function tasksFor(k){ if(k==='all') return [...tasks]; if(k==='nodate') return tasks.filter(t=>!t.deadline); return tasks.filter(t=>t.deadline===k) }
+function tasksFor(k){ let list; if(k==='all') list=[...tasks]; else if(k==='nodate') list=tasks.filter(t=>!t.deadline); else list=tasks.filter(t=>t.deadline===k); if(memberFilter) list=list.filter(t=>(t.assignees||[]).includes(memberFilter)); return list; }
 function pendingCnt(k){ return tasksFor(k).filter(t=>!t.done).length }
 function eventsFor(date){ return events.filter(e=>e.date===date) }
 function hasEv(date){ return eventsFor(date).length>0 }
@@ -728,7 +729,7 @@ function render(){ renderSidebar(); renderPanel(); setTimeout(setupDnD,0) }
 // fix 1: collapsible week groups
 function renderSidebar(){
   const t = todayStr();
-  const allPend    = tasks.filter(x=>!x.done).length;
+  const allPend    = memberFilter ? tasks.filter(x=>!x.done&&(x.assignees||[]).includes(memberFilter)).length : tasks.filter(x=>!x.done).length;
   const nodatePend = pendingCnt('nodate');
   let html = '';
 
@@ -802,6 +803,16 @@ function renderSidebar(){
     ${nodatePend>0?`<span class="nav-badge">${nodatePend}</span>`:''}
   </div>`;
 
+  if(members.length){
+    html += `<div class="sb-div"></div><div class="sb-lbl">팀원별</div>`;
+    html += `<div class="nav-item${memberFilter===null?' active':''}" data-member-filter="__all__"><span class="nav-dow" style="width:auto;font-size:11px">전체</span><div class="nav-info"></div></div>`;
+    html += members.map(m=>{
+      const mPend = tasks.filter(t=>!t.done&&(t.assignees||[]).includes(m)).length;
+      const col = memberColor(m);
+      return `<div class="nav-item${memberFilter===m?' active':''}" data-member-filter="${esc(m)}"><span class="av" style="background:${col};width:16px;height:16px;font-size:8px;margin:0;flex-shrink:0">${esc(m.slice(0,1).toUpperCase())}</span><div class="nav-info"><span class="nav-date">${esc(m)}</span></div>${mPend>0?`<span class="nav-badge">${mPend}</span>`:''}</div>`;
+    }).join('');
+  }
+
   document.getElementById('dateNav').innerHTML = html;
 
   // Week group toggle
@@ -820,6 +831,15 @@ function renderSidebar(){
       sel = el.dataset.sel;
       if(sel!=='all'&&sel!=='nodate') syncNav(sel);
       pview = 'list';
+      render();
+    });
+  });
+
+  // Member filter
+  document.querySelectorAll('.nav-item[data-member-filter]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const val = el.dataset.memberFilter;
+      memberFilter = val==='__all__' ? null : val;
       render();
     });
   });
@@ -851,7 +871,7 @@ function renderPanel(){
 
     head.innerHTML = `
       <div class="ph-row1">
-        <div class="ph-title">${fmtPanelTitle(sel)}</div>
+        <div class="ph-title">${fmtPanelTitle(sel)}${memberFilter?`<span style="font-size:12px;font-weight:500;color:#fff;background:${memberColor(memberFilter)};border-radius:5px;padding:2px 9px;margin-left:8px;vertical-align:middle">${esc(memberFilter)}</span>`:''}</div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">${evBtn}${tabs}</div>
       </div>
       ${isDateSel?`<div class="ph-sub">${parseD(sel).getFullYear()}년 ${parseD(sel).getMonth()+1}월 ${parseD(sel).getDate()}일</div>`:'<div style="height:4px"></div>'}
@@ -917,6 +937,7 @@ function renderPanel(){
           <span style="font-size:18px;font-weight:700;letter-spacing:-.4px">${mon.getFullYear()}년 ${mon.getMonth()+1}월</span>
           <button class="ph-nav-btn" data-nav="next">›</button>
           <span style="font-size:12px;color:var(--text2);font-weight:500;margin-left:4px">${weekLabel}</span>
+          ${memberFilter?`<span style="font-size:12px;font-weight:500;color:#fff;background:${memberColor(memberFilter)};border-radius:5px;padding:2px 9px;margin-left:4px">${esc(memberFilter)}</span>`:''}
         </div>
         <button class="ev-add-btn" id="pinNoticeBtn">공지 고정</button>
         ${tabs}
