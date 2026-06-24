@@ -1707,6 +1707,23 @@ async function setupRealtimeNotifications(){
       if(deletedId) tasks = tasks.filter(t=>t.id!==deletedId);
       render();
     })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'task_comments'},payload=>{
+      console.log('[Realtime] task_comments INSERT 수신:', payload);
+      const c = payload.new;
+      // taskMeta에 즉시 반영
+      const meta = getTaskMeta(c.task_id);
+      if(!meta.comments.find(x=>x.id===c.id)){
+        meta.comments.push({ id:c.id, text:c.text||'', author:c.author||'', createdAt:c.created_at||'' });
+        persistTaskMeta();
+      }
+      render();
+      // 담당자에게 알림
+      const task = tasks.find(t=>t.id===c.task_id);
+      if(task && (task.assignees||[]).includes(myName)){
+        console.log('[댓글 알림] 담당 업무에 댓글 추가 — 업무:', task.title, '/ 작성자:', c.author);
+        showCommentNotification(task, c);
+      }
+    })
     .subscribe((status, err)=>{
       if(err) console.error('[Realtime] 구독 오류:', err);
       console.log('[Realtime] 구독 상태:', status);
@@ -1739,7 +1756,21 @@ async function showTaskNotification(task){
   new Notification(`📋 ${task.title}`, opts);
 }
 
-async function navigateToTask(taskId){
+async function showCommentNotification(task, comment){
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  const body = `${comment.author}: ${comment.text}`;
+  const opts = { body, tag:`comment-${comment.id}`, data:{ taskId:task.id, openModal:true } };
+  if('serviceWorker' in navigator){
+    try{
+      const reg = await navigator.serviceWorker.ready;
+      reg.showNotification(`💬 ${task.title}`, opts);
+      return;
+    }catch(err){ console.warn('[댓글 알림] SW showNotification 실패, fallback:', err); }
+  }
+  new Notification(`💬 ${task.title}`, opts);
+}
+
+async function navigateToTask(taskId, openModal=false){
   let task = tasks.find(t=>t.id===taskId);
   if(!task){
     console.log('[알림 클릭] tasks에 없음 — 데이터 재로드 후 재시도:', taskId);
@@ -1773,6 +1804,7 @@ async function navigateToTask(taskId){
     void card.offsetWidth; // reflow to restart animation
     card.classList.add('card-highlight');
     setTimeout(()=>card.classList.remove('card-highlight'), 2500);
+    if(openModal) openDetailModal(taskId);
   });
 }
 
@@ -1828,7 +1860,7 @@ if('serviceWorker' in navigator){
 
   // SW로부터 메시지 수신 (알림 클릭 → 업무 이동)
   navigator.serviceWorker.addEventListener('message', e=>{
-    if(e.data?.type==='NAVIGATE_TASK') navigateToTask(e.data.taskId);
+    if(e.data?.type==='NAVIGATE_TASK') navigateToTask(e.data.taskId, e.data.openModal);
   });
 }
 
@@ -1840,8 +1872,10 @@ loadData().then(()=>{
   if(!myName && members.length){ renderMyNameSel(); openOvr('myNameOverlay'); }
   setupRealtimeNotifications();
   // 새 탭으로 열렸을 때 URL 파라미터로 전달된 taskId 처리
-  const _urlTaskId = new URLSearchParams(location.search).get('task');
-  if(_urlTaskId) navigateToTask(_urlTaskId);
+  const _urlParams = new URLSearchParams(location.search);
+  const _urlTaskId = _urlParams.get('task');
+  const _urlOpenModal = _urlParams.get('openModal') === 'true';
+  if(_urlTaskId) navigateToTask(_urlTaskId, _urlOpenModal);
 }).catch(err=>{ console.error('init error:',err); render(); });
 </script>
 </body>
