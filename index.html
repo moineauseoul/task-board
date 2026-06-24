@@ -1111,11 +1111,11 @@ function cardHTML(t, compact=false){
   const commentH = meta.comments.length ? `<span class="comment-ico">댓글 ${meta.comments.length}</span>` : '';
   const authorH = t.author && !compact ? `<div class="card-footer"><span class="card-author">✍ ${esc(t.author)}</span></div>` : '';
 
-  return `<div class="task-card ${t.priority}${t.done?' done':''}${compact?' compact':''}${ov?' overdue':''}${isUrgent?' urgent':''}" data-id="${t.id}" draggable="true">
+  return `<div class="task-card ${t.priority}${t.done?' done':''}${compact?' compact':''}${ov?' overdue':''}${isUrgent?' urgent':''}" data-id="${t.id}" data-action="detail" draggable="true">
     <div class="card-stripe"></div>
     <div class="card-inner">
       <div class="chk${t.done?' on':''}" data-action="toggle" data-id="${t.id}"></div>
-      <div class="card-body" data-action="detail" data-id="${t.id}">
+      <div class="card-body">
         <div class="card-title">${esc(t.title)}</div>
         <div class="card-meta"><span class="pri ${t.priority}"><span class="dot"></span>${PLBL[t.priority]}</span>${tagsH}${dlH}${asgnH}${memoH}${commentH}</div>
         ${authorH}
