@@ -483,6 +483,7 @@ let editId=null, delId=null, selTags=[], selAssignees=[], dragId=null;
 let memberFilter = null;
 let myName = localStorage.getItem('bd_my_name') || '';
 let realtimeChannel = null;
+let openModalTaskId = null;
 let pendingMyName = '';
 
 // ─── Supabase ─────────────────────────────────────────────────
@@ -1409,6 +1410,7 @@ function openDetailModal(id){
   document.querySelectorAll('.comment-del').forEach(btn=>{
     btn.addEventListener('click',()=>deleteComment(t.id, btn.dataset.commentId));
   });
+  openModalTaskId = id;
   openOvr('detailOverlay');
 }
 
@@ -1717,6 +1719,12 @@ async function setupRealtimeNotifications(){
         persistTaskMeta();
       }
       render();
+      if(openModalTaskId === c.task_id){
+        const mb = document.getElementById('detailBody');
+        const scrollTop = mb ? mb.scrollTop : 0;
+        openDetailModal(openModalTaskId);
+        requestAnimationFrame(()=>{ const el = document.getElementById('detailBody'); if(el) el.scrollTop = scrollTop; });
+      }
       // 담당자에게 알림
       const task = tasks.find(t=>t.id===c.task_id);
       if(task && (task.assignees||[]).includes(myName)){
@@ -1727,14 +1735,21 @@ async function setupRealtimeNotifications(){
     .on('postgres_changes',{event:'DELETE',schema:'public',table:'task_comments'},payload=>{
       console.log('[Realtime] task_comments DELETE 수신:', payload);
       const deletedId = payload.old?.id;
+      let affectedTaskId = null;
       if(deletedId){
-        for(const meta of Object.values(taskMeta)){
+        for(const [tid, meta] of Object.entries(taskMeta)){
           const before = meta.comments.length;
           meta.comments = meta.comments.filter(c=>c.id!==deletedId);
-          if(meta.comments.length !== before){ persistTaskMeta(); break; }
+          if(meta.comments.length !== before){ persistTaskMeta(); affectedTaskId = tid; break; }
         }
       }
       render();
+      if(openModalTaskId && openModalTaskId === affectedTaskId){
+        const mb = document.getElementById('detailBody');
+        const scrollTop = mb ? mb.scrollTop : 0;
+        openDetailModal(openModalTaskId);
+        requestAnimationFrame(()=>{ const el = document.getElementById('detailBody'); if(el) el.scrollTop = scrollTop; });
+      }
     })
     .subscribe((status, err)=>{
       if(err) console.error('[Realtime] 구독 오류:', err);
@@ -1826,7 +1841,7 @@ async function navigateToTask(taskId, openModal=false){
 
 // ─── Overlay helpers ──────────────────────────────────────────
 function openOvr(id) { document.getElementById(id).classList.add('open') }
-function closeOvr(id){ document.getElementById(id).classList.remove('open') }
+function closeOvr(id){ document.getElementById(id).classList.remove('open'); if(id==='detailOverlay') openModalTaskId = null; }
 
 // ─── Button wiring ────────────────────────────────────────────
 document.getElementById('addBtn').addEventListener('click',   ()=>openTaskModal());
