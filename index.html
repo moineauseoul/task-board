@@ -161,11 +161,11 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 .ic.del:hover{background:#FEF2F2;color:var(--high)}
 /* notification click highlight */
 @keyframes card-pulse{
-  0%  {box-shadow:0 0 0 3px rgba(196,168,130,0.6),0 4px 20px rgba(196,168,130,0.4)}
-  60% {box-shadow:0 0 0 3px rgba(196,168,130,0.3),0 4px 20px rgba(196,168,130,0.2)}
-  100%{box-shadow:none}
+  0%  {border-left-width:6px;border-left-color:#C4A882}
+  60% {border-left-width:5px;border-left-color:#C4A882}
+  100%{border-left-width:3px}
 }
-.task-card.card-highlight{animation:card-pulse 2.5s ease-out forwards}
+.task-card.card-highlight{animation:card-pulse 2s ease-out forwards;box-shadow:none !important}
 
 /* compact (week view) */
 .task-card.compact .card-inner{padding:8px 10px}
