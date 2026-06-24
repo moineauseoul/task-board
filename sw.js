@@ -9,7 +9,10 @@ self.addEventListener('notificationclick', e => {
       for (const client of clientList) {
         if ('focus' in client) {
           client.focus();
-          if (taskId) client.postMessage({ type: 'NAVIGATE_TASK', taskId, openModal });
+          if (taskId) {
+            console.log('[SW] postMessage 전송 - taskId:', taskId, '/ openModal:', openModal);
+            client.postMessage({ type: 'NAVIGATE_TASK', taskId, openModal });
+          }
           return Promise.resolve();
         }
       }

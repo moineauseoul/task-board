@@ -1783,6 +1783,7 @@ async function showCommentNotification(task, comment){
 }
 
 async function navigateToTask(taskId, openModal=false){
+  console.log('[navigateToTask] taskId:', taskId, '/ openModal:', openModal);
   let task = tasks.find(t=>t.id===taskId);
   if(!task){
     console.log('[알림 클릭] tasks에 없음 — 데이터 재로드 후 재시도:', taskId);
