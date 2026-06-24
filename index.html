@@ -699,7 +699,7 @@ function getVisibleWeekCols(weekDates){
   const count = w >= 1200 ? 3 : 2;
   const todIdx = mon2fri.indexOf(todayStr());
   if(todIdx === -1) return mon2fri.slice(0, count);
-  const start = Math.min(Math.max(todIdx - (count === 3 ? 1 : 0), 0), 5 - count);
+  const start = Math.min(todIdx, 5 - count);
   return mon2fri.slice(start, start + count);
 }
 function getMonthGrid(y,mo){
