@@ -1725,9 +1725,24 @@ async function showTaskNotification(task){
 function navigateToTask(taskId){
   const task = tasks.find(t=>t.id===taskId);
   if(!task){ console.warn('[알림 클릭] 업무를 찾을 수 없음:', taskId); return; }
-  if(task.deadline){ sel = task.deadline; syncNav(task.deadline); }
-  else { sel = 'nodate'; }
-  pview = 'list';
+
+  const deadline = task.deadline;
+  if(deadline){
+    const weekDates = getWeekDates(wkStart).slice(0,5); // 현재 주간뷰 월~금 범위
+    if(weekDates.includes(deadline)){
+      // 현재 주간뷰 범위 내 → 주간뷰 유지
+      pview = 'week';
+    } else {
+      // 현재 주간뷰 범위 밖 → 목록뷰로 전환 후 해당 날짜로 이동
+      sel = deadline;
+      syncNav(deadline);
+      pview = 'list';
+    }
+  } else {
+    sel = 'nodate';
+    pview = 'list';
+  }
+
   render();
   requestAnimationFrame(()=>{
     const card = document.querySelector(`.task-card[data-id="${taskId}"]`);
