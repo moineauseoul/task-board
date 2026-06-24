@@ -1683,14 +1683,29 @@ async function setupRealtimeNotifications(){
   console.log('[Realtime] 알림 권한:', 'Notification' in window ? Notification.permission : '미지원');
   realtimeChannel = _sb.channel('tasks-notify')
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'tasks'},payload=>{
-      console.log('[Realtime] INSERT 수신 — raw payload:', payload);
+      console.log('[Realtime] INSERT 수신:', payload);
       const task = rowToTask(payload.new);
-      console.log('[Realtime] 파싱된 업무 — title:', task.title, '/ assignees:', task.assignees);
-      // tasks 배열에 즉시 추가 (알림 클릭 시 navigateToTask가 찾을 수 있도록)
+      console.log('[Realtime] 추가된 업무 — title:', task.title, '/ assignees:', task.assignees);
       if(!tasks.find(t=>t.id===task.id)) tasks.push(task);
       const matched = (task.assignees||[]).includes(myName);
       console.log('[Realtime] 내 이름('+myName+') 담당자 포함 여부:', matched);
       if(matched) showTaskNotification(task);
+      render();
+    })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'tasks'},payload=>{
+      console.log('[Realtime] UPDATE 수신:', payload);
+      const updated = rowToTask(payload.new);
+      console.log('[Realtime] 수정된 업무 — title:', updated.title, '/ id:', updated.id);
+      const idx = tasks.findIndex(t=>t.id===updated.id);
+      if(idx!==-1) tasks[idx] = updated; else tasks.push(updated);
+      render();
+    })
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'tasks'},payload=>{
+      console.log('[Realtime] DELETE 수신:', payload);
+      const deletedId = payload.old?.id;
+      console.log('[Realtime] 삭제된 업무 id:', deletedId);
+      if(deletedId) tasks = tasks.filter(t=>t.id!==deletedId);
+      render();
     })
     .subscribe((status, err)=>{
       if(err) console.error('[Realtime] 구독 오류:', err);
