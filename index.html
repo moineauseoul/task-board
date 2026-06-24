@@ -1733,10 +1733,9 @@ function navigateToTask(taskId){
       // 현재 주간뷰 범위 내 → 주간뷰 유지
       pview = 'week';
     } else {
-      // 현재 주간뷰 범위 밖 → 목록뷰로 전환 후 해당 날짜로 이동
-      sel = deadline;
-      syncNav(deadline);
-      pview = 'list';
+      // 현재 주간뷰 범위 밖 → 해당 업무 날짜가 속한 주로 wkStart 변경 후 주간뷰 유지
+      wkStart = getMonday(deadline);
+      pview = 'week';
     }
   } else {
     sel = 'nodate';
