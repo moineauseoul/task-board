@@ -4,12 +4,11 @@ self.addEventListener('notificationclick', e => {
 
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-      const openModal = e.notification.data?.openModal || false;
       // 이미 열린 탭이 있으면 포커스 후 메시지 전송
       for (const client of clientList) {
         if ('focus' in client) {
           client.focus();
-          if (taskId) client.postMessage({ type: 'NAVIGATE_TASK', taskId, openModal });
+          if (taskId) client.postMessage({ type: 'NAVIGATE_TASK', taskId, openModal: true });
           return;
         }
       }

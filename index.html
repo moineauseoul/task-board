@@ -1724,6 +1724,18 @@ async function setupRealtimeNotifications(){
         showCommentNotification(task, c);
       }
     })
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'task_comments'},payload=>{
+      console.log('[Realtime] task_comments DELETE 수신:', payload);
+      const deletedId = payload.old?.id;
+      if(deletedId){
+        for(const meta of Object.values(taskMeta)){
+          const before = meta.comments.length;
+          meta.comments = meta.comments.filter(c=>c.id!==deletedId);
+          if(meta.comments.length !== before){ persistTaskMeta(); break; }
+        }
+      }
+      render();
+    })
     .subscribe((status, err)=>{
       if(err) console.error('[Realtime] 구독 오류:', err);
       console.log('[Realtime] 구독 상태:', status);
@@ -1798,12 +1810,13 @@ async function navigateToTask(taskId, openModal=false){
   render();
   requestAnimationFrame(()=>{
     const card = document.querySelector(`.task-card[data-id="${taskId}"]`);
-    if(!card) return;
-    card.scrollIntoView({behavior:'smooth', block:'center'});
-    card.classList.remove('card-highlight');
-    void card.offsetWidth; // reflow to restart animation
-    card.classList.add('card-highlight');
-    setTimeout(()=>card.classList.remove('card-highlight'), 2500);
+    if(card){
+      card.scrollIntoView({behavior:'smooth', block:'center'});
+      card.classList.remove('card-highlight');
+      void card.offsetWidth; // reflow to restart animation
+      card.classList.add('card-highlight');
+      setTimeout(()=>card.classList.remove('card-highlight'), 2500);
+    }
     if(openModal) openDetailModal(taskId);
   });
 }
