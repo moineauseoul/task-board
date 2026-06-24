@@ -1757,7 +1757,7 @@ async function showTaskNotification(task){
   }
   const body = task.author ? `작성자: ${task.author}` : '새 업무가 배정되었습니다';
   console.log('[알림] 표시 — 제목:', task.title, '/ 본문:', body);
-  const opts = { body, tag: task.id, data: { taskId: task.id } };
+  const opts = { body, tag: task.id, data: { taskId: task.id, openModal: true } };
   if('serviceWorker' in navigator){
     try{
       const reg = await navigator.serviceWorker.ready;
