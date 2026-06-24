@@ -324,6 +324,17 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;font-family:inherit
 
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── Sidebar toggle ───────────────────────────────────────── */
+.sb-toggle{display:none;width:32px;height:32px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;align-items:center;justify-content:center;font-size:18px;color:var(--text2);flex-shrink:0;transition:all .12s;line-height:1;padding:0}
+.sb-toggle:hover{background:var(--bg);border-color:var(--border2)}
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:99}
+.sb-overlay.open{display:block}
+@media(max-width:1099px){
+  .sb-toggle{display:flex}
+  .sidebar{position:fixed;top:0;left:0;height:100vh;z-index:100;transform:translateX(-100%);transition:transform .25s ease}
+  .sidebar.open{transform:translateX(0);box-shadow:4px 0 20px rgba(0,0,0,.12)}
+}
 </style>
 </head>
 <body>
@@ -351,6 +362,7 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;font-family:inherit
     <div class="panel-body" id="panelBody"></div>
   </div>
 </div>
+<div class="sb-overlay" id="sbOverlay"></div>
 
 <!-- Task Modal -->
 <div class="overlay" id="taskOverlay">
@@ -889,6 +901,7 @@ function renderPanel(){
 
     head.innerHTML = `
       <div class="ph-row1">
+        <button class="sb-toggle">☰</button>
         <div class="ph-title">${fmtPanelTitle(sel)}${memberFilter?`<span style="font-size:12px;font-weight:500;color:#fff;background:${memberColor(memberFilter)};border-radius:5px;padding:2px 9px;margin-left:8px;vertical-align:middle">${esc(memberFilter)}</span>`:''}</div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">${evBtn}${tabs}</div>
       </div>
@@ -950,6 +963,7 @@ function renderPanel(){
 
     head.innerHTML = `
       <div class="ph-row1">
+        <button class="sb-toggle">☰</button>
         <div style="display:flex;align-items:center;gap:4px;flex:1">
           <button class="ph-nav-btn" data-nav="prev">‹</button>
           <span style="font-size:18px;font-weight:700;letter-spacing:-.4px">${mon.getFullYear()}년 ${mon.getMonth()+1}월</span>
@@ -1043,6 +1057,7 @@ function renderPanel(){
 
     head.innerHTML = `
       <div class="ph-row1">
+        <button class="sb-toggle">☰</button>
         <div style="display:flex;align-items:center;gap:4px;flex:1">
           <button class="ph-nav-btn" data-nav="prev">‹</button>
           <span style="font-size:18px;font-weight:700;letter-spacing:-.4px">${y}년 ${mo}월</span>
@@ -1145,8 +1160,15 @@ function sorted(list){
 }
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
 
+// ─── Sidebar toggle ───────────────────────────────────────────
+function closeSidebar(){ document.querySelector('.sidebar').classList.remove('open'); document.getElementById('sbOverlay').classList.remove('open'); }
+window.matchMedia('(max-width:1099px)').addEventListener('change', e=>{ if(!e.matches) closeSidebar(); });
+
 // ─── Global event delegation ──────────────────────────────────
 document.addEventListener('click', e=>{
+  // 0) Sidebar toggle / overlay
+  if(e.target.closest('.sb-toggle')){ const sb=document.querySelector('.sidebar'),ov=document.getElementById('sbOverlay'); sb.classList.toggle('open'); ov.classList.toggle('open'); return; }
+  if(e.target.id==='sbOverlay'){ closeSidebar(); return; }
   // 1) Navigation arrows — single global handler, zero per-render listeners
   const navBtn = e.target.closest('.ph-nav-btn[data-nav]');
   if(navBtn){
