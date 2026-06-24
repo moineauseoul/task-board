@@ -13,7 +13,8 @@ self.addEventListener('notificationclick', e => {
         }
       }
       // 열린 탭이 없으면 새 탭으로 열기 (URL 파라미터로 taskId 전달)
-      const url = taskId ? `/?task=${encodeURIComponent(taskId)}` : '/';
+      const base = 'https://folnua-task-board.vercel.app';
+      const url = taskId ? `${base}/?task=${encodeURIComponent(taskId)}` : base;
       return clients.openWindow(url);
     })
   );

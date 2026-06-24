@@ -1686,6 +1686,8 @@ async function setupRealtimeNotifications(){
       console.log('[Realtime] INSERT 수신 — raw payload:', payload);
       const task = rowToTask(payload.new);
       console.log('[Realtime] 파싱된 업무 — title:', task.title, '/ assignees:', task.assignees);
+      // tasks 배열에 즉시 추가 (알림 클릭 시 navigateToTask가 찾을 수 있도록)
+      if(!tasks.find(t=>t.id===task.id)) tasks.push(task);
       const matched = (task.assignees||[]).includes(myName);
       console.log('[Realtime] 내 이름('+myName+') 담당자 포함 여부:', matched);
       if(matched) showTaskNotification(task);
@@ -1722,8 +1724,13 @@ async function showTaskNotification(task){
   new Notification(`📋 ${task.title}`, opts);
 }
 
-function navigateToTask(taskId){
-  const task = tasks.find(t=>t.id===taskId);
+async function navigateToTask(taskId){
+  let task = tasks.find(t=>t.id===taskId);
+  if(!task){
+    console.log('[알림 클릭] tasks에 없음 — 데이터 재로드 후 재시도:', taskId);
+    await loadData();
+    task = tasks.find(t=>t.id===taskId);
+  }
   if(!task){ console.warn('[알림 클릭] 업무를 찾을 수 없음:', taskId); return; }
 
   const deadline = task.deadline;
