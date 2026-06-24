@@ -1333,17 +1333,26 @@ function openDetailModal(id){
   const tagsH = (t.tags||[]).map(g=>`<span class="t-tag">${esc(g)}</span>`).join('');
   const meta = getTaskMeta(t.id);
   const statusUpdated = fmtDateTime(meta.statusUpdatedAt);
-  const activeCommentAuthor = members.includes(commentAuthor) ? commentAuthor : '';
-  const authorPickerHtml = members.length
-    ? `<div class="comment-author-panel">
-        <div class="comment-author-label">작성자</div>
-        <div class="comment-author-chips" id="commentAuthorChips">
-          ${members.map(m=>`<button class="comment-member-chip${m===activeCommentAuthor?' on':''}" type="button" data-comment-author="${esc(m)}">
-            <span class="av-sm" style="background:${memberColor(m)}">${esc(m.slice(0,1).toUpperCase())}</span>${esc(m)}
-          </button>`).join('')}
-        </div>
-      </div>`
-    : `<div style="font-size:12px;color:var(--text3)">팀원 관리에서 팀원을 먼저 추가하세요</div>`;
+  const myNameFixed = myName && members.includes(myName);
+  const activeCommentAuthor = myNameFixed ? myName : (members.includes(commentAuthor) ? commentAuthor : '');
+  const authorPickerHtml = !members.length
+    ? `<div style="font-size:12px;color:var(--text3)">팀원 관리에서 팀원을 먼저 추가하세요</div>`
+    : myNameFixed
+      ? `<div class="comment-author-panel">
+          <div class="comment-author-label">작성자</div>
+          <div style="display:flex;align-items:center;gap:6px;padding:2px 0">
+            <span class="av-sm" style="background:${memberColor(myName)}">${esc(myName.slice(0,1).toUpperCase())}</span>
+            <span style="font-size:13px;font-weight:500;color:var(--text)">${esc(myName)}</span>
+          </div>
+        </div>`
+      : `<div class="comment-author-panel">
+          <div class="comment-author-label">작성자</div>
+          <div class="comment-author-chips" id="commentAuthorChips">
+            ${members.map(m=>`<button class="comment-member-chip${m===activeCommentAuthor?' on':''}" type="button" data-comment-author="${esc(m)}">
+              <span class="av-sm" style="background:${memberColor(m)}">${esc(m.slice(0,1).toUpperCase())}</span>${esc(m)}
+            </button>`).join('')}
+          </div>
+        </div>`;
   const commentsHtml = meta.comments.length
     ? meta.comments.map(c=>`
       <div class="comment-item">
@@ -1432,11 +1441,11 @@ function setupCommentAuthorPicker(taskId){
 }
 async function addComment(taskId){
   const input = document.getElementById('commentInput');
-  const authorInput = document.getElementById('commentAuthorInput');
   const text = input.value.trim();
   if(!text){ input.focus(); return; }
-  const author = authorInput.value.trim();
-  if(members.length && !members.includes(author)){
+  const myNameFixed = myName && members.includes(myName);
+  const author = myNameFixed ? myName : document.getElementById('commentAuthorInput').value.trim();
+  if(!myNameFixed && members.length && !members.includes(author)){
     document.getElementById('commentAuthorChips')?.classList.add('need-selection');
     return;
   }
