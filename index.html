@@ -1669,14 +1669,15 @@ async function saveMyName(){
   }
   setupRealtimeNotifications();
 }
-function setupRealtimeNotifications(){
+async function setupRealtimeNotifications(){
   if(!myName){
     console.log('[Realtime] 건너뜀: 내 이름 미설정');
     return;
   }
   if(realtimeChannel){
-    console.log('[Realtime] 이미 구독 중 (이름:', myName, ')');
-    return;
+    console.log('[Realtime] 기존 채널 제거 후 재구독 (이름:', myName, ')');
+    await _sb.removeChannel(realtimeChannel);
+    realtimeChannel = null;
   }
   console.log('[Realtime] 구독 시작 — 이름:', myName);
   console.log('[Realtime] 알림 권한:', 'Notification' in window ? Notification.permission : '미지원');
