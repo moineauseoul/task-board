@@ -1817,7 +1817,9 @@ async function navigateToTask(taskId, openModal=false){
       card.classList.add('card-highlight');
       setTimeout(()=>card.classList.remove('card-highlight'), 2500);
     }
-    if(openModal) openDetailModal(taskId);
+    if(openModal){
+      setTimeout(()=>openDetailModal(taskId), 300);  // DOM 완전히 그려진 후 실행
+    }
   });
 }
 
