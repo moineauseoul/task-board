@@ -159,15 +159,23 @@ body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);co
 .ic{width:26px;height:26px;border:none;background:transparent;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all .12s}
 .ic:hover{background:var(--bg);color:var(--text)}
 .ic.del:hover{background:#FEF2F2;color:var(--high)}
+/* notification click highlight */
+@keyframes card-pulse{
+  0%{box-shadow:0 0 0 3px var(--accent),0 4px 16px rgba(99,102,241,.35)}
+  70%{box-shadow:0 0 0 3px var(--accent),0 4px 16px rgba(99,102,241,.35)}
+  100%{box-shadow:none}
+}
+.task-card.card-highlight{animation:card-pulse 2.5s ease-out forwards;border-color:var(--accent) !important}
+
 /* compact (week view) */
 .task-card.compact .card-inner{padding:8px 10px}
-.task-card.compact .card-title{font-size:12px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-card.compact .card-title{font-size:13px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .task-card.compact .card-actions{padding:5px 7px 5px 3px}
 
 /* ── Week view ────────────────────────────────────────────── */
-.week-wrap{display:flex;gap:10px;flex:1;min-width:max-content}
+.week-wrap{display:flex;gap:10px;flex:1}
 /* fix 2: wider columns */
-.week-col{width:260px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;transition:border-color .15s,background .15s}
+.week-col{flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden;transition:border-color .15s,background .15s}
 .week-col.drag-over{background:#EFF6FF !important;border-color:var(--today) !important}
 .week-col.today-col{border-color:#BFDBFE}
 .week-col-head{padding:10px 12px 8px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .12s}
@@ -308,9 +316,8 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;font-family:inherit
 /* Avatar sizes */
 .av-sm{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;flex-shrink:0}
 /* Stacked avatars on card */
-.asgn-row{display:inline-flex;align-items:center}
-.asgn-row .av{margin-right:-5px;border:1.5px solid var(--surface);flex-shrink:0}
-.asgn-row .av:last-child{margin-right:0}
+.asgn-row{display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap}
+.asgn-badge{display:inline-flex;align-items:center;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:600;color:#fff;flex-shrink:0;white-space:nowrap}
 .av-more{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;flex-shrink:0;background:var(--text3);border:1.5px solid var(--surface)}
 
 ::-webkit-scrollbar{width:5px;height:5px}
@@ -935,8 +942,8 @@ function renderPanel(){
   } else if(pview==='week'){
     // week view: read wkStart directly (always a clean Monday)
     const weekDates = getWeekDates(wkStart);
-    const mon = parseD(weekDates[0]), sun = parseD(weekDates[6]);
-    const weekLabel = `${mon.getMonth()+1}/${mon.getDate()} – ${sun.getMonth()+1}/${sun.getDate()}`;
+    const mon = parseD(weekDates[0]), fri = parseD(weekDates[4]);
+    const weekLabel = `${mon.getMonth()+1}/${mon.getDate()} – ${fri.getMonth()+1}/${fri.getDate()}`;
 
     head.innerHTML = `
       <div class="ph-row1">
@@ -960,7 +967,7 @@ function renderPanel(){
         <div class="pin-txt">${esc(n.text)}</div>
         <button class="pin-del" data-pin-id="${n.id}">×</button>
       </div>`).join('')}</div>` : '';
-    body.innerHTML = `${pinnedHtml}<div class="week-wrap">${weekDates.map(d=>{
+    body.innerHTML = `${pinnedHtml}<div class="week-wrap">${weekDates.slice(0,5).map(d=>{
       const dObj   = parseD(d);
       const isToday = d===t;
       const isWkend = dObj.getDay()===0||dObj.getDay()===6;
@@ -1093,7 +1100,7 @@ function cardHTML(t, compact=false){
   const asgns = t.assignees||[];
   const MAX_AV = compact ? 2 : 4;
   const asgnH = asgns.length
-    ? `<span class="asgn-row">${asgns.slice(0,MAX_AV).map(m=>`<span class="av" style="background:${memberColor(m)}" title="${esc(m)}">${esc(m.slice(0,1).toUpperCase())}</span>`).join('')}${asgns.length>MAX_AV?`<span class="av-more">+${asgns.length-MAX_AV}</span>`:''}</span>`
+    ? `<span class="asgn-row">${asgns.slice(0,MAX_AV).map(m=>`<span class="asgn-badge" style="background:${memberColor(m)}">${esc(m)}</span>`).join('')}${asgns.length>MAX_AV?`<span class="av-more">+${asgns.length-MAX_AV}</span>`:''}</span>`
     : '';
   const dlH = dl
     ? `<span class="dl ${ds}"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x=".75" y="1.75" width="8.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M3 .75v2M7 .75v2M.75 4.75h8.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>${dl}</span>` : '';
@@ -1505,7 +1512,9 @@ async function deleteEvent(id){
 }
 
 // ─── Member color (이름 기반 결정론적 색상) ──────────────────
+const MEMBER_COLORS = {'서수진':'#C4A882','이지민':'#B8A0C8','전유나':'#A8B5A2'};
 function memberColor(name){
+  if(MEMBER_COLORS[name]) return MEMBER_COLORS[name];
   let h=0;
   for(let i=0;i<name.length;i++){ h=name.charCodeAt(i)+((h<<5)-h)|0; }
   return `hsl(${Math.abs(h)%360},55%,42%)`;
@@ -1689,7 +1698,7 @@ function setupRealtimeNotifications(){
       if(status==='CLOSED')         console.warn('[Realtime] 🔌 채널 닫힘');
     });
 }
-function showTaskNotification(task){
+async function showTaskNotification(task){
   if(!('Notification' in window)){
     console.warn('[알림] Notification API 미지원 브라우저');
     return;
@@ -1701,7 +1710,33 @@ function showTaskNotification(task){
   }
   const body = task.author ? `작성자: ${task.author}` : '새 업무가 배정되었습니다';
   console.log('[알림] 표시 — 제목:', task.title, '/ 본문:', body);
-  new Notification(`📋 ${task.title}`, {body, tag:task.id});
+  const opts = { body, tag: task.id, data: { taskId: task.id } };
+  if('serviceWorker' in navigator){
+    try{
+      const reg = await navigator.serviceWorker.ready;
+      reg.showNotification(`📋 ${task.title}`, opts);
+      return;
+    }catch(err){ console.warn('[알림] SW showNotification 실패, fallback:', err); }
+  }
+  new Notification(`📋 ${task.title}`, opts);
+}
+
+function navigateToTask(taskId){
+  const task = tasks.find(t=>t.id===taskId);
+  if(!task){ console.warn('[알림 클릭] 업무를 찾을 수 없음:', taskId); return; }
+  if(task.deadline){ sel = task.deadline; syncNav(task.deadline); }
+  else { sel = 'nodate'; }
+  pview = 'list';
+  render();
+  requestAnimationFrame(()=>{
+    const card = document.querySelector(`.task-card[data-id="${taskId}"]`);
+    if(!card) return;
+    card.scrollIntoView({behavior:'smooth', block:'center'});
+    card.classList.remove('card-highlight');
+    void card.offsetWidth; // reflow to restart animation
+    card.classList.add('card-highlight');
+    setTimeout(()=>card.classList.remove('card-highlight'), 2500);
+  });
 }
 
 // ─── Overlay helpers ──────────────────────────────────────────
@@ -1748,6 +1783,18 @@ document.addEventListener('keydown', e=>{
   if(e.key==='n'&&!inInput&&!document.querySelector('.overlay.open')) openTaskModal();
 });
 
+// ─── Service Worker 등록 ────────────────────────────────────────
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js')
+    .then(reg=>console.log('[SW] 등록 성공, scope:', reg.scope))
+    .catch(err=>console.error('[SW] 등록 실패:', err));
+
+  // SW로부터 메시지 수신 (알림 클릭 → 업무 이동)
+  navigator.serviceWorker.addEventListener('message', e=>{
+    if(e.data?.type==='NAVIGATE_TASK') navigateToTask(e.data.taskId);
+  });
+}
+
 // ─── Init ─────────────────────────────────────────────────────
 loadData().then(()=>{
   render();
@@ -1755,6 +1802,9 @@ loadData().then(()=>{
   console.log('[초기화] 알림 권한:', 'Notification' in window ? Notification.permission : '미지원');
   if(!myName && members.length){ renderMyNameSel(); openOvr('myNameOverlay'); }
   setupRealtimeNotifications();
+  // 새 탭으로 열렸을 때 URL 파라미터로 전달된 taskId 처리
+  const _urlTaskId = new URLSearchParams(location.search).get('task');
+  if(_urlTaskId) navigateToTask(_urlTaskId);
 }).catch(err=>{ console.error('init error:',err); render(); });
 </script>
 </body>
