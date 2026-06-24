@@ -1870,9 +1870,18 @@ document.addEventListener('keydown', e=>{
 
 // ─── Service Worker 등록 ────────────────────────────────────────
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js')
-    .then(reg=>console.log('[SW] 등록 성공, scope:', reg.scope))
-    .catch(err=>console.error('[SW] 등록 실패:', err));
+  navigator.serviceWorker.register('./sw.js').then(reg=>{
+    console.log('[SW] 등록 성공, scope:', reg.scope);
+    reg.addEventListener('updatefound', ()=>{
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', ()=>{
+        if(newWorker.state === 'activated'){
+          console.log('[SW] 새 버전 활성화 - 자동 새로고침');
+          window.location.reload();
+        }
+      });
+    });
+  }).catch(err=>console.error('[SW] 등록 실패:', err));
 
   // SW로부터 메시지 수신 (알림 클릭 → 업무 이동)
   navigator.serviceWorker.addEventListener('message', e=>{

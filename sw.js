@@ -1,3 +1,13 @@
+const SW_VERSION = '1.0.1';
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== SW_VERSION).map(k => caches.delete(k)))
+    )
+  );
+});
+
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   const data = e.notification.data || {};
