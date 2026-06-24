@@ -336,7 +336,7 @@ textarea.fi{resize:vertical;min-height:76px;line-height:1.55;font-family:inherit
 .sb-toggle:hover{background:var(--bg);border-color:var(--border2)}
 .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:99}
 .sb-overlay.open{display:block}
-@media(max-width:1099px){
+@media(max-width:1499px){
   .sb-toggle{display:flex}
   .sidebar{position:fixed;top:0;left:0;height:100vh;z-index:100;transform:translateX(-100%);transition:transform .25s ease}
   .sidebar.open{transform:translateX(0);box-shadow:4px 0 20px rgba(0,0,0,.12)}
@@ -692,6 +692,16 @@ function getMonday(d){
   dt.setDate(dt.getDate()+diff); return fmt(dt); // 로컬 기준 → 항상 월요일
 }
 function getWeekDates(d){ const m=getMonday(d); return Array.from({length:7},(_,i)=>addDays(m,i)); }
+function getVisibleWeekCols(weekDates){
+  const mon2fri = weekDates.slice(0,5);
+  const w = window.innerWidth;
+  if(w >= 1500) return mon2fri;
+  const count = w >= 1200 ? 3 : 2;
+  const todIdx = mon2fri.indexOf(todayStr());
+  if(todIdx === -1) return mon2fri.slice(0, count);
+  const start = Math.min(Math.max(todIdx - (count === 3 ? 1 : 0), 0), 5 - count);
+  return mon2fri.slice(start, start + count);
+}
 function getMonthGrid(y,mo){
   const first=new Date(y,mo-1,1), fdow=first.getDay(), lead=fdow===0?6:fdow-1;
   const start=new Date(first); start.setDate(start.getDate()-lead);
@@ -990,7 +1000,7 @@ function renderPanel(){
         <div class="pin-txt">${esc(n.text)}</div>
         <button class="pin-del" data-pin-id="${n.id}">×</button>
       </div>`).join('')}</div>` : '';
-    body.innerHTML = `${pinnedHtml}<div class="week-wrap">${weekDates.slice(0,5).map(d=>{
+    body.innerHTML = `${pinnedHtml}<div class="week-wrap">${getVisibleWeekCols(weekDates).map(d=>{
       const dObj   = parseD(d);
       const isToday = d===t;
       const isWkend = dObj.getDay()===0||dObj.getDay()===6;
@@ -1168,7 +1178,14 @@ function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 
 // ─── Sidebar toggle ───────────────────────────────────────────
 function closeSidebar(){ document.querySelector('.sidebar').classList.remove('open'); document.getElementById('sbOverlay').classList.remove('open'); }
-window.matchMedia('(max-width:1099px)').addEventListener('change', e=>{ if(!e.matches) closeSidebar(); });
+window.matchMedia('(max-width:1499px)').addEventListener('change', e=>{ if(!e.matches) closeSidebar(); });
+
+// ─── Resize → re-render week view ─────────────────────────────
+let _resizeTimer = null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(()=>{ if(pview==='week') render(); }, 150);
+});
 
 // ─── Global event delegation ──────────────────────────────────
 document.addEventListener('click', e=>{
